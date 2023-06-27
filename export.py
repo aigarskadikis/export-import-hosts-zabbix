@@ -58,7 +58,8 @@ listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, he
         "output":["host","hostid","status","maintenance_status"],
         "selectItems": "count",
         "selectParentTemplates": ["name"],
-        "selectTriggers": "count"
+        "selectTriggers": "count",
+        "selectMacros": "extend"
         
     },
     "auth": token,
@@ -73,8 +74,11 @@ for item in listOfHosts:
   item["amountOfTriggers"] = item.pop("triggers")
   if len(item["parentTemplates"])>0:
       print("there are",len(item["parentTemplates"]),"templates linked to ",item["hostName"])
-  # remove parentTemplates. This step does not make sence
+  # remove parentTemplates. This step does not make sence. It's temporary to have a clean output
   item.pop("parentTemplates")
+
+  # count macros in output
+  item["amountOfMacros"] = len(item.pop("macros"))
 
 # get list of interfaces. pick up only the "main" ones
 listOfInterfaces = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
