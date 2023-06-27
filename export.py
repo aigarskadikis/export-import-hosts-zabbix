@@ -32,6 +32,9 @@ from jsonpath_ng import jsonpath, parse
 # support for CSV export and import
 import csv
 
+# format output better
+from pprint import pprint
+
 # prepare a file to write
 data_file = open('/tmp/jsonoutput.csv', 'w', newline='')
 csv_writer = csv.writer(data_file)
@@ -48,32 +51,41 @@ token = parse('$.result').find(json.loads(response.text))[0].value
 print(token)
 
 # get list of hosts
-
 listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
     "jsonrpc": "2.0",
     "method": "host.get",
     "params": {
-        "output":["host","hostid"]
+        "output":["host","hostid","status"]
         
     },
     "auth": token,
     "id": 1
 }), verify=False).text))[0].value
 
+# rename elements in JSON tree
+for item in listOfHosts:
+  item["hostName"] = item.pop("host")
+  item["hostStatus"] = item.pop("status")
 
+# get list of interfaces
 listOfInterfaces = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
     "jsonrpc": "2.0",
     "method": "hostinterface.get",
     "params": {
-        "output": ["hostid","ip","type"],
+        "output": ["hostid","ip","dns","type"],
         "filter": {"main":1}
     },
     "auth": token,
     "id": 1
 }), verify=False).text))[0].value
 
+# rename elements in JSON tree
+for item in listOfInterfaces:
+  item["interface_DNS"] = item.pop("dns")
+  item["IP_address"] = item.pop("ip")
+
 outcome = [json[0] | json[1] for json in zip(listOfHosts, listOfInterfaces)]
-print(outcome)
+pprint(outcome)
 
 # write output to file
 count = 0
