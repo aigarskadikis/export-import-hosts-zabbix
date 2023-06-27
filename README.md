@@ -36,6 +36,11 @@ Install modules required by program
 pip3.9 install jsonpath-ng requests
 ```
 
+Download this project
+```
+cd && git clone https://github.com/aigarskadikis/export-import-hosts-zabbix.git
+```
+
 Set the main program executable
 ```
 chmod +x export.py
