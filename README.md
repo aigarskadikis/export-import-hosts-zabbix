@@ -1,24 +1,25 @@
 # Export list of host objects to CSV
 
+Export list of host objects, host level macros from Zabbix 5.0 and import into Zabbix 6.0
+
 ## Features
 
 * Python 3.9 compatible
 * Credentials in separate file. /var/lib/zabbix/config.py out from box
-* Doing bulk request to get all objects in one go
+* Doing few bulk requests to get all objects in one go
 * Output to CSV. /tmp/hosts.csv by default
 * Use native JSON/requests. not using 'pyzabbix' or 'zabbixapi' module
-* Join 2 JSON arrays together (by hostid). works like magic (only when both parts has a column)
-* Extract host objects
-* Extract interfaces
-* Extract only main interface
-* Replace few JSON leafs to not make conflicts
+* Join 2 JSON arrays together (by hostid). works like magic (only when both parts has a matching column)
+* Extract host objects. host.get
+* Extract only main interfaces. hostinterface.get.
+* Replace names of few JSON leafs to not make conflicts while merging data from different "tables"
 * Remove HTTPS errors. Not really a feature!
-* Put interface details in same level
-* Same amount of columns per SNMPv2 and SNMPv3
+* Put interface details in same level.
+* Same amount of columns per SNMPv2 and SNMPv3. Every host element will have all SNMPv3 fiels. They will be blank if not used
 
 ## todo
 
-Separate file for host macros
+Separate file for host macros. /tmp/macros.csv
 
 "user.login" API method between 5.0 vs 6.0 is using different input fields
 
@@ -79,9 +80,16 @@ See output
 cat /tmp/hosts.csv
 ```
 
-## Known issues
+## Missing features, ideas to improve
 
 No human friendly message if username or password is not correct
 
-There must be a way to optimize "try" amd "except" part.
+No value mapping per host.status
+
+There must be a way to optimize "try" amd "except" part of code
+
+
+## Known issues
+
+With Zabbix 6.0 it's possible to create host objects (Zabbix agent active checks only, Internal merics only) without interface at all. This program will not export those objects.
 

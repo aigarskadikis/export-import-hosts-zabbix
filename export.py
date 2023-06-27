@@ -20,9 +20,9 @@ import urllib3
 urllib3.disable_warnings()
 
 # shortify vairables
-url = config.url
-user = config.username
-password = config.password
+url = config.url_src_instance
+user = config.username_src_instance
+password = config.password_src_instance
 
 # have support for JSON path
 # pip3.9 install jsonpath-ng
