@@ -60,7 +60,7 @@ listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, he
     "id": 1
 }), verify=False).text))[0].value
 
-print(listOfHosts.text)
+print(listOfHosts)
 
 listOfInterfaces = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
     "jsonrpc": "2.0",
