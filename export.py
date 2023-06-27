@@ -8,11 +8,9 @@
 import sys
 sys.path.insert(0,'/var/lib/zabbix')
 import config
-#print(config.url)
-#print(config.username)
-#print(config.password)
 
 # work with Zabbix API JSON RPC
+# pip3.9 install requests
 import requests
 import json
 
@@ -31,6 +29,13 @@ password = config.password
 import json
 from jsonpath_ng import jsonpath, parse
 
+# support for CSV export and import
+import csv
+
+# prepare a file to write
+data_file = open('/tmp/jsonoutput.csv', 'w', newline='')
+csv_writer = csv.writer(data_file)
+
 
 # pick up token which will be used latter in script
 payload = json.dumps({"jsonrpc":"2.0","method":"user.login","params":{"user":user,"password":password},"id":1})
@@ -38,9 +43,34 @@ headers = {'Content-Type': 'application/json'}
 
 response = requests.request("POST", url, headers=headers, data=payload, verify=False)
 
-#token = json.dumps(response.text).result
-
 #print(response.text)
 token = parse('$.result').find(json.loads(response.text))[0].value
 print(token)
+
+# get list of hosts
+
+listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
+    "jsonrpc": "2.0",
+    "method": "host.get",
+    "params": {
+        "output":["host","hostid"]
+        
+    },
+    "auth": token,
+    "id": 1
+}), verify=False).text))[0].value
+
+print(listOfHosts)
+
+# write output to file
+count = 0
+for data in listOfHosts:
+    if count == 0:
+        header = data.keys()
+        csv_writer.writerow(header)
+        count += 1
+    csv_writer.writerow(data.values())
+
+# close file for writing
+data_file.close()
 
