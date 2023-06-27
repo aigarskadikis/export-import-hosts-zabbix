@@ -2,19 +2,19 @@
 
 ## Features
 
-Python 3.9 compatible
-Credentials in separate file. /var/lib/zabbix/config.py out from box
-doing bulk request to get all objects in one go
-output to CSV. /tmp/hosts.csv by default
-use native JSON/requests. not using 'pyzabbix' or 'zabbixapi' module
-join 2 JSON arrays together (by hostid). works like magic (only when both parts has a column)
-extract host objects
-extract interfaces
-extract only main interface
-replace some JSON leaf to not make conflicts
-remove HTTPS errors
-put interface details in same level
-same amount of columns per SNMPv2 and SNMPv3
+* Python 3.9 compatible
+* Credentials in separate file. /var/lib/zabbix/config.py out from box
+* Doing bulk request to get all objects in one go
+* Output to CSV. /tmp/hosts.csv by default
+* Use native JSON/requests. not using 'pyzabbix' or 'zabbixapi' module
+* Join 2 JSON arrays together (by hostid). works like magic (only when both parts has a column)
+* Extract host objects
+* Extract interfaces
+* Extract only main interface
+* Replace few JSON leafs to not make conflicts
+* Remove HTTPS errors. Not really a feature!
+* Put interface details in same level
+* Same amount of columns per SNMPv2 and SNMPv3
 
 ## todo
 
