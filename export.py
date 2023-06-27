@@ -60,23 +60,24 @@ listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, he
     "id": 1
 }), verify=False).text))[0].value
 
-print(listOfHosts)
 
 listOfInterfaces = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
     "jsonrpc": "2.0",
     "method": "hostinterface.get",
     "params": {
-        "output": "extend"
+        "output": ["hostid","ip","type"],
+        "filter": {"main":1}
     },
     "auth": token,
     "id": 1
 }), verify=False).text))[0].value
 
-#print(listOfInterfaces)
+outcome = [json[0] | json[1] for json in zip(listOfHosts, listOfInterfaces)]
+print(outcome)
 
 # write output to file
 count = 0
-for data in listOfHosts:
+for data in outcome:
     if count == 0:
         header = data.keys()
         csv_writer.writerow(header)
