@@ -62,6 +62,18 @@ listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, he
 
 print(listOfHosts)
 
+listOfInterfaces = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
+    "jsonrpc": "2.0",
+    "method": "hostinterface.get",
+    "params": {
+        "output": "extend"
+    },
+    "auth": token,
+    "id": 1
+}), verify=False).text))[0].value
+
+#print(listOfInterfaces)
+
 # write output to file
 count = 0
 for data in listOfHosts:
