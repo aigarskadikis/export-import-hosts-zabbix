@@ -35,9 +35,14 @@ import csv
 # format output better
 from pprint import pprint
 
-# prepare a file to write
-data_file = open('/tmp/hosts.csv', 'w', newline='')
-csv_writer = csv.writer(data_file)
+# prepare a file to write host list
+hostListCSV = open('/tmp/hosts.csv', 'w', newline='')
+csvHostList_writer = csv.writer(hostListCSV)
+
+# prepare a file to write macro list
+macroListCSV = open('/tmp/macros.csv', 'w', newline='')
+csvMacroList_writer = csv.writer(macroListCSV)
+
 
 
 # pick up token which will be used latter in script
@@ -65,6 +70,16 @@ listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, he
     "auth": token,
     "id": 1
 }), verify=False).text))[0].value
+
+listOfHostMacros = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
+    "jsonrpc": "2.0",
+    "method": "usermacro.get",
+    "params": {
+        "output": "extend"
+    },
+    "auth": token,
+    "id": 1
+    }), verify=False).text))[0].value
 
 # rename elements in JSON tree to not conflict while mapping with other result
 for item in listOfHosts:
@@ -168,15 +183,36 @@ for item in listOfInterfaces:
 outcome = [json[0] | json[1] for json in zip(listOfHosts, listOfInterfaces)]
 pprint(outcome)
 
-# write output to file
+macroList = [json[0] | json[1] for json in zip(listOfHostMacros,listOfHosts)]
+# drop unnecessary columns
+for item in macroList:
+  item.pop("hostmacroid")
+  item.pop("hostid")
+  item.pop("type")
+  item.pop("maintenance_status")
+  item.pop("hostStatus")
+  item.pop("amountOfItems")
+  item.pop("amountOfTriggers")
+  item.pop("amountOfMacros")
+
+# write host list to a file
 count = 0
 for data in outcome:
     if count == 0:
         header = data.keys()
-        csv_writer.writerow(header)
+        csvHostList_writer.writerow(header)
         count += 1
-    csv_writer.writerow(data.values())
+    csvHostList_writer.writerow(data.values())
+
+# write macro list to a file
+count = 0
+for data in macroList:
+    if count == 0:
+        header = data.keys()
+        csvMacroList_writer.writerow(header)
+        count += 1
+    csvMacroList_writer.writerow(data.values())
 
 # close file for writing
-data_file.close()
-
+hostListCSV.close()
+macroListCSV.close()

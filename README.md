@@ -8,7 +8,7 @@ Export list of host objects, host level macros from Zabbix 5.0 and import into Z
 * Credentials in separate file. /var/lib/zabbix/config.py out from box
 * Doing few bulk requests to get all objects in one go
 * Output to CSV. /tmp/hosts.csv by default
-* Use native JSON/requests. not using 'pyzabbix' or 'zabbixapi' module
+* Use native JSON/requests. not using 'pyzabbix' or 'zabbixapi' module. Can use official documents from https://www.zabbix.com/documentation/5.0/en/manual/api and copy snippet prety much 1:1
 * Join 2 JSON arrays together (by hostid). works like magic (only when both parts has a matching column)
 * Extract host objects. host.get
 * Extract only main interfaces. hostinterface.get.
