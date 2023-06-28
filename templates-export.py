@@ -39,6 +39,11 @@ import csv
 from pprint import pprint
 
 templateExportDir = config.zabbix_templates_export_dir
+# create a sub directory 'all'
+try:
+    os.makedirs(os.path.join(templateExportDir,'all'))
+except:
+    cannotMakeDir = 1
 
 # prepare a file to write host list
 templateListCSV = open('/tmp/templates.csv', 'w', newline='')
@@ -121,6 +126,12 @@ for item in listOfTemplates:
               f.write(xmlTemplate)
               # close file
               f.close()
+  
+  # there will be one single directory too to have all template objects in one place
+  f = open(  templateExportDir + '/all/' + item["TemplateName"]+'.xml', "a")
+  f.write(xmlTemplate)
+  f.close()
+
 
 
 print("")
