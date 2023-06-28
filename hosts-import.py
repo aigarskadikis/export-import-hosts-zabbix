@@ -69,17 +69,26 @@ listOfExistingHosts = parse('$.result').find(json.loads(requests.request("POST",
 }), verify=False).text))[0].value
 
 # check host name in existing instance
+
+existingHostsList = []
+
 for existingHost in listOfExistingHosts:
+    existingHostsList.append(existingHost["host"])
 
+print(existingHostsList)
+
+for existingHost in listOfExistingHosts:
     for newHost in listOfHosts:
-        if newHost["hostName"]==existingHost["host"]:
-            print(bcolors.OKGREEN + newHost["hostName"] + " already exists in destination"+ bcolors.ENDC)
+        if newHost["hostName"] in existingHostsList:
+            print(bcolors.OKGREEN + "'" + newHost["hostName"] + "' already exists in destination"+ bcolors.ENDC)
         else:
-            print(newHost["hostName"] + "is not yet registred")
-
+            print(bcolors.FAIL + "'"+newHost["hostName"] + "' is not yet registred")
 
             # create new host
-            print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
+            try:
+                if newHost["interfaceType"]==1:
+                    # create a Zabbix agent host
+                    print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
  "jsonrpc": "2.0",
     "method": "host.create",
     "params": {
@@ -103,6 +112,26 @@ for existingHost in listOfExistingHosts:
     "auth": token,
     "id": 1
                   }), verify=False).text))[0].value)
+                elif newHost["interfaceType"]==2:
+                    # this is SNMP host. Need to check version
+
+                    if newHost["version"]==2:
+                        # this is SNMPv2 host
+                        something=2
+
+                    elif newHost["version"]==3:
+                        # this is SNMPv3 host
+                        something=3
+
+                    else:
+                        unknownSNMPversion=1
+
+                else:
+                    notMatchinSNMP=1
+            except:
+                print("no execution of Zabbix API")
+
+
 
 
 # close file for writing
