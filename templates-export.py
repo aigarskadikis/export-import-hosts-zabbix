@@ -35,6 +35,8 @@ import csv
 # format output better
 from pprint import pprint
 
+templateExportDir = '/root/ztemplates'
+
 # prepare a file to write host list
 templateListCSV = open('/tmp/templates.csv', 'w', newline='')
 csvTemplateList_writer = csv.writer(templateListCSV)
@@ -62,6 +64,25 @@ listOfTemplates = parse('$.result').find(json.loads(requests.request("POST", url
 
 for item in listOfTemplates:
   item["TemplateName"] = item.pop("host")
+
+  # go through every object name an execite additional configuration/template export function
+  print(item["templateid"])
+  f = open( templateExportDir + '/' + item["templateid"]+'.xml', "a")
+  f.write(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
+   "jsonrpc": "2.0",
+    "method": "configuration.export",
+    "params": {
+        "options": {
+            "templates": [
+               item["templateid"]
+            ]
+        },
+        "format": "xml"
+    },
+    "auth": token,
+    "id": 1
+          }), verify=False).text))[0].value)
+  f.close()
 
 # write host list to a file
 count = 0
