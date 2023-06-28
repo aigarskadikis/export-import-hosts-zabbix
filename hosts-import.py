@@ -8,6 +8,18 @@ import json
 import urllib3
 urllib3.disable_warnings()
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
 # shortify vairables
 url = config.url_dest_instance
 user = config.username_dest_instance
@@ -56,8 +68,15 @@ listOfExistingHosts = parse('$.result').find(json.loads(requests.request("POST",
     "id": 1
 }), verify=False).text))[0].value
 
-for host in listOfExistingHosts:
-    print(host["host"])
+# check host name in existing instance
+for existingHost in listOfExistingHosts:
+    #print(existingHost["host"])
+
+    for newHost in listOfHosts:
+        if newHost["hostName"]==existingHost["host"]:
+            print(bcolors.OKGREEN + newHost["hostName"] + " already exists in destination"+ bcolors.ENDC)
+        else:
+            print(newHost["hostName"] + "is not yet registred")
 
 
 # close file for writing
