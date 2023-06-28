@@ -38,7 +38,7 @@ import csv
 # format output better
 from pprint import pprint
 
-templateExportDir = '/root/ztemplates'
+templateExportDir = config.zabbix_templates_export_dir
 
 # prepare a file to write host list
 templateListCSV = open('/tmp/templates.csv', 'w', newline='')
@@ -52,14 +52,13 @@ response = requests.request("POST", url, headers=headers, data=payload, verify=F
 
 #print(response.text)
 token = parse('$.result').find(json.loads(response.text))[0].value
-print(token)
 
 # get list of templates
 listOfTemplates = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
     "jsonrpc": "2.0",
     "method": "template.get",
     "params": {
-        "templateids": ["11999","13728","13641"],
+#        "templateids": ["11999","13728","13641"],
         "output": ["host","templateid"],
         "selectGroups": "query"
     },
@@ -78,15 +77,16 @@ ListOfGroups = parse('$.result').find(json.loads(requests.request("POST", url, h
     "id": 1
 }), verify=False).text))[0].value
 
+print("total amount of templates to export:",len(listOfTemplates))
+
 for item in listOfTemplates:
   item["TemplateName"] = item.pop("host")
   item["TemplateGroups"] = item.pop("groups")
 
   # go through every object name an execite additional configuration/template export function
-  print(item["templateid"])
+  print(item["templateid"]+' ',end='', flush=True)
 
   # map template groups with name
-  pprint(item["TemplateGroups"])
   
   # put template XML content in variable
   xmlTemplate = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
@@ -109,7 +109,6 @@ for item in listOfTemplates:
               # mapping has been found
               # calculate the destionation directory based on template group name
               path = os.path.join(templateExportDir,globalGroup["name"])
-              print(path)
               # make sure directory exists
               try:
                   os.makedirs(path)
@@ -123,6 +122,11 @@ for item in listOfTemplates:
               # close file
               f.close()
 
+
+print("")
+print("to explore outcome use commands:")
+print("tree",templateExportDir)
+print("find",templateExportDir,"-type f")
 # write host list to a file
 count = 0
 for data in listOfTemplates:
