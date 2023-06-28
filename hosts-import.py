@@ -85,7 +85,7 @@ for existingHost in listOfExistingHosts:
             pprint(newHost)
 
             # check if this is ZBX host
-            if newHost["interfaceType"]=='1':
+            if newHost["interface_type"]=='1':
                 try:
                     # create a Zabbix agent host
                     print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
@@ -98,9 +98,9 @@ for existingHost in listOfExistingHosts:
                 "type": 1,
                 "main": 1,
                 "useip": 1,
-                "ip": newHost["IP_address"],
-                "dns": newHost["interface_DNS"],
-                "port": newHost["interfacePort"]
+                "ip": newHost["interface_ip"],
+                "dns": newHost["interface_dns"],
+                "port": newHost["interface_port"]
             }
         ],
         "groups": [
@@ -116,7 +116,7 @@ for existingHost in listOfExistingHosts:
                     print("unable to create ZBX host")
 
                 
-            elif newHost["interfaceType"]=='2':
+            elif newHost["interface_type"]=='2':
                 print("new host is SNMP")
                 # this is SNMP host. Need to check version
 
@@ -134,19 +134,13 @@ for existingHost in listOfExistingHosts:
                 "type": 2,
                 "main": 1,
                 "useip": 1,
-                "ip": newHost["IP_address"],
-                "dns": newHost["interface_DNS"],
-                "port": newHost["interfacePort"],
+                "ip": newHost["interface_ip"],
+                "dns": newHost["interface_dns"],
+                "port": newHost["interface_port"],
                 "details" : {
-                    "version": newHost["version"],
+                    "community": newHost["community"],
                     "bulk": newHost["bulk"],
-                    "securityname": newHost["securityname"],
-                    "contextname": newHost["contextname"],
-                    "securitylevel": newHost["securitylevel"],
-                    "authpassphrase": newHost["authpassphrase"],
-                    "authprotocol": newHost["authprotocol"],
-                    "privpassphrase": newHost["privpassphrase"],
-                    "privprotocol": newHost["privprotocol"]
+                    "version": newHost["version"]
                     }
             }
         ],
@@ -176,9 +170,9 @@ for existingHost in listOfExistingHosts:
                 "type": 2,
                 "main": 1,
                 "useip": 1,
-                "ip": newHost["IP_address"],
-                "dns": newHost["interface_DNS"],
-                "port": newHost["interfacePort"],
+                "ip": newHost["interface_ip"],
+                "dns": newHost["interface_dns"],
+                "port": newHost["interface_port"],
                 "details" : {
                     "version": newHost["version"],
                     "bulk": newHost["bulk"],
