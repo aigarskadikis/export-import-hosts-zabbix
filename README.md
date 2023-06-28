@@ -42,6 +42,8 @@ echo '
 url_src_instance = "http://127.0.0.1/api_jsonrpc.php"
 username_src_instance = "Admin"
 password_src_instance = "zabbix"
+zabbix_templates_export_dir = '/tmp/ztemplates'
+csv_export_dir = '/tmp/zabbix_csv_export'
 ' | sudo tee /var/lib/zabbix/config.py
 ```
 

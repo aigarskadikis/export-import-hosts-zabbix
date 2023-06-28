@@ -9,6 +9,9 @@ import sys
 sys.path.insert(0,'/var/lib/zabbix')
 import config
 
+# make directories
+import os
+
 # work with Zabbix API JSON RPC
 # pip3.9 install requests
 import requests
@@ -23,6 +26,13 @@ urllib3.disable_warnings()
 url = config.url_src_instance
 user = config.username_src_instance
 password = config.password_src_instance
+csv_export_dir = config.csv_export_dir
+
+
+try:
+    os.makedirs(csv_export_dir)
+except:
+    makeDirFailes = 1
 
 # have support for JSON path
 # pip3.9 install jsonpath-ng
@@ -36,11 +46,11 @@ import csv
 from pprint import pprint
 
 # prepare a file to write host list
-hostListCSV = open('/tmp/hosts.csv', 'w', newline='')
+hostListCSV = open(csv_export_dir+'/hosts.csv', 'w', newline='')
 csvHostList_writer = csv.writer(hostListCSV)
 
 # prepare a file to write macro list
-macroListCSV = open('/tmp/macros.csv', 'w', newline='')
+macroListCSV = open(csv_export_dir+'/macros.csv', 'w', newline='')
 csvMacroList_writer = csv.writer(macroListCSV)
 
 
@@ -87,9 +97,18 @@ for item in listOfHosts:
   item["hostStatus"] = item.pop("status")
   item["amountOfItems"] = item.pop("items")
   item["amountOfTriggers"] = item.pop("triggers")
+
+  templateBundle=''
   if len(item["parentTemplates"])>0:
       print("there are",len(item["parentTemplates"]),"templates linked to ",item["hostName"])
-  # remove parentTemplates. This step does not make sence. It's temporary to have a clean output
+
+      for idx,elem in enumerate(item["parentTemplates"]):
+          templateBundle+=elem["name"]
+          # if not last element
+          if idx!=len(item["parentTemplates"])-1:
+              templateBundle+=';'
+  item["templateBundle"] = templateBundle
+  # remove parentTemplates after parsing
   item.pop("parentTemplates")
 
   # count macros in output
