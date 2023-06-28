@@ -82,7 +82,7 @@ for existingHost in listOfExistingHosts:
         else:
             print(bcolors.FAIL + "'"+newHost["hostName"] + "' is not yet registred")
 
-            pprint(newHost)
+#            pprint(newHost)
 
             # check if this is ZBX host
             if newHost["interface_type"]=='1':
