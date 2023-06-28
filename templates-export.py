@@ -56,19 +56,41 @@ listOfTemplates = parse('$.result').find(json.loads(requests.request("POST", url
     "jsonrpc": "2.0",
     "method": "template.get",
     "params": {
-        "output": ["host","templateid"]
+        "templateids": ["11999","13728","13641"],
+        "output": ["host","templateid"],
+        "selectGroups": "query"
     },
+    "auth": token,
+    "id": 1
+}), verify=False).text))[0].value
+
+# get all template groups. will be used later for mapping
+ListOfGroups = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
+        "jsonrpc": "2.0",
+    "method": "hostgroup.get",
+    "params": {
+        "output": ["groupid","name"]
+        },
     "auth": token,
     "id": 1
 }), verify=False).text))[0].value
 
 for item in listOfTemplates:
   item["TemplateName"] = item.pop("host")
+  item["TemplateGroups"] = item.pop("groups")
 
   # go through every object name an execite additional configuration/template export function
   print(item["templateid"])
+
+  # map template groups with name
+  attachedTemplates = [json[0] | json[1] for json in zip(item["TemplateGroups"], ListOfGroups)]
+  pprint(attachedTemplates)
+
+  # create a new file for writing
   f = open( templateExportDir + '/' + item["templateid"]+'.xml', "a")
-  f.write(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
+
+  # put template XML content in variable for later analysis
+  xmlTemplate = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
    "jsonrpc": "2.0",
     "method": "configuration.export",
     "params": {
@@ -81,7 +103,10 @@ for item in listOfTemplates:
     },
     "auth": token,
     "id": 1
-          }), verify=False).text))[0].value)
+          }), verify=False).text))[0].value
+  
+  # write XML tempate content in file
+  f.write(xmlTemplate)
   f.close()
 
 # write host list to a file
