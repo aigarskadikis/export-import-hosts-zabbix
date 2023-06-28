@@ -70,13 +70,39 @@ listOfExistingHosts = parse('$.result').find(json.loads(requests.request("POST",
 
 # check host name in existing instance
 for existingHost in listOfExistingHosts:
-    #print(existingHost["host"])
 
     for newHost in listOfHosts:
         if newHost["hostName"]==existingHost["host"]:
             print(bcolors.OKGREEN + newHost["hostName"] + " already exists in destination"+ bcolors.ENDC)
         else:
             print(newHost["hostName"] + "is not yet registred")
+
+
+            # create new host
+            print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
+ "jsonrpc": "2.0",
+    "method": "host.create",
+    "params": {
+        "host": newHost["hostName"],
+        "interfaces": [
+            {
+                "type": 1,
+                "main": 1,
+                "useip": 1,
+                "ip": newHost["IP_address"],
+                "dns": newHost["interface_DNS"],
+                "port": newHost["interfacePort"]
+            }
+        ],
+        "groups": [
+            {
+                "groupid": "5"
+            }
+        ]
+    },
+    "auth": token,
+    "id": 1
+                  }), verify=False).text))[0].value)
 
 
 # close file for writing
