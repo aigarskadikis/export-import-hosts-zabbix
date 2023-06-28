@@ -24,7 +24,7 @@ Separate file for host macros. /tmp/macros.csv
 "user.login" API method between 5.0 vs 6.0 is using different input fields
 
 
-## How to use
+## Host CSV export
 
 On frontend server, test if frontend is reachable
 ```
@@ -69,17 +69,28 @@ cd && git clone https://github.com/aigarskadikis/export-import-hosts-zabbix.git 
 
 Set the main program executable
 ```
-chmod +x export.py
+chmod +x hosts-export.py
 ```
 
 Launch program
 ```
-./export.py
+./hosts-export.py
 ```
 
 See output
 ```
-cat /tmp/hosts.csv
+cat /tmp/zabbix_csv_export/hosts.csv
+cat /tmp/zabbix_csv_export/macros.csv
+```
+
+## Template export
+
+Make sure 'zabbix_templates_export_dir' has been specified in config.py
+
+Then run
+
+```
+./templates-export
 ```
 
 ## Missing features, ideas to improve
