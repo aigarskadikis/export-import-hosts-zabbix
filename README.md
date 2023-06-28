@@ -38,13 +38,20 @@ mkdir -p /var/lib/zabbix
 
 Install credentials
 ```
-echo '
-url_src_instance = "http://127.0.0.1/api_jsonrpc.php"
-username_src_instance = "Admin"
-password_src_instance = "zabbix"
+echo "
+
+url_src_instance = 'http://127.0.0.1/api_jsonrpc.php'
+username_src_instance = 'Admin'
+password_src_instance = 'zabbix'
+
 zabbix_templates_export_dir = '/tmp/ztemplates'
 csv_export_dir = '/tmp/zabbix_csv_export'
-' | sudo tee /var/lib/zabbix/config.py
+
+url_dest_instance = 'http://example.contoso.com/api_jsonrpc.php'
+username_dest_instance = 'Admin'
+password_dest_instance = 'zabbix'
+
+" | sudo tee /var/lib/zabbix/config.py
 ```
 
 Install git utility to download this project
@@ -90,7 +97,7 @@ Make sure 'zabbix_templates_export_dir' has been specified in config.py
 Then run
 
 ```
-./templates-export
+./templates-export.py
 ```
 
 ## Missing features, ideas to improve
