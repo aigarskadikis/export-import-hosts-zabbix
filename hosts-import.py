@@ -75,8 +75,6 @@ existingHostsList = []
 for existingHost in listOfExistingHosts:
     existingHostsList.append(existingHost["host"])
 
-print(existingHostsList)
-
 for existingHost in listOfExistingHosts:
     for newHost in listOfHosts:
         if newHost["hostName"] in existingHostsList:
@@ -84,9 +82,11 @@ for existingHost in listOfExistingHosts:
         else:
             print(bcolors.FAIL + "'"+newHost["hostName"] + "' is not yet registred")
 
-            # create new host
-            try:
-                if newHost["interfaceType"]==1:
+            pprint(newHost)
+
+            # check if this is ZBX host
+            if newHost["interfaceType"]=='1':
+                try:
                     # create a Zabbix agent host
                     print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
  "jsonrpc": "2.0",
@@ -112,24 +112,23 @@ for existingHost in listOfExistingHosts:
     "auth": token,
     "id": 1
                   }), verify=False).text))[0].value)
-                elif newHost["interfaceType"]==2:
-                    # this is SNMP host. Need to check version
+                except:
+                    print("host create not possible")
 
-                    if newHost["version"]==2:
-                        # this is SNMPv2 host
-                        something=2
-
-                    elif newHost["version"]==3:
-                        # this is SNMPv3 host
-                        something=3
-
-                    else:
-                        unknownSNMPversion=1
-
+                
+            elif newHost["interfaceType"]==2:
+                # this is SNMP host. Need to check version
+                if newHost["version"]==2:
+                    # this is SNMPv2 host
+                    something=2
+                elif newHost["version"]==3:
+                    # this is SNMPv3 host
+                    something=3
                 else:
-                    notMatchinSNMP=1
-            except:
-                print("no execution of Zabbix API")
+                    unknownSNMPversion=1
+
+            else:
+                    notMatchinSNMPorZBX=1
 
 
 
