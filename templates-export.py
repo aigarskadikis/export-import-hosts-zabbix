@@ -9,6 +9,9 @@ import sys
 sys.path.insert(0,'/var/lib/zabbix')
 import config
 
+# to automatically make directories via python
+import os
+
 # work with Zabbix API JSON RPC
 # pip3.9 install requests
 import requests
@@ -83,31 +86,42 @@ for item in listOfTemplates:
   print(item["templateid"])
 
   # map template groups with name
-  attachedTemplates = [json[0] | json[1] for json in zip(item["TemplateGroups"], ListOfGroups)]
-  pprint(attachedTemplates)
-
-  # create a new file for writing
-  f = open( templateExportDir + '/' + item["templateid"]+'.xml', "a")
-
-  # put template XML content in variable for later analysis
+  pprint(item["TemplateGroups"])
+  
+  # put template XML content in variable
   xmlTemplate = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
    "jsonrpc": "2.0",
     "method": "configuration.export",
-    "params": {
-        "options": {
-            "templates": [
-               item["templateid"]
-            ]
-        },
+    "params": { "options": { "templates": [ item["templateid"] ] },
         "format": "xml"
     },
     "auth": token,
     "id": 1
           }), verify=False).text))[0].value
-  
-  # write XML tempate content in file
-  f.write(xmlTemplate)
-  f.close()
+
+  # if template belongs to multiple template groups then create multiple directories
+  for templateGroup in item["TemplateGroups"]:
+      # take template group id and find the template group name
+      for globalGroup in ListOfGroups:
+          # look up the mapping
+          if templateGroup["groupid"]==globalGroup["groupid"]:
+
+              # mapping has been found
+              # calculate the destionation directory based on template group name
+              path = os.path.join(templateExportDir,globalGroup["name"])
+              print(path)
+              # make sure directory exists
+              try:
+                  os.makedirs(path)
+              except:
+                  cannotMakeDir = 1
+              
+              # open file for writing
+              f = open(  templateExportDir + '/' + globalGroup["name"] + '/' +item["TemplateName"]+'.xml', "a")
+              # write XML tempate content in file
+              f.write(xmlTemplate)
+              # close file
+              f.close()
 
 # write host list to a file
 count = 0
