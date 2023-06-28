@@ -128,63 +128,69 @@ listOfInterfaces = parse('$.result').find(json.loads(requests.request("POST", ur
 
 # rename elements in JSON tree to not conflict while mapping with other result
 for item in listOfInterfaces:
-  item["interface_DNS"] = item.pop("dns")
-  item["IP_address"] = item.pop("ip")
-  item["interfaceDetails"] = item.pop("details")
-  item["interfaceType"] = item.pop("type")
-  item["interfacePort"] = item.pop("port")
+  item["interface_dns"] = item.pop("dns")
+  item["interface_ip"] = item.pop("ip")
+  item["interface_details"] = item.pop("details")
+  item["interface_type"] = item.pop("type")
+  item["interface_port"] = item.pop("port")
   
   # per SNMPv2/SNMPv3 the amount of columns differ, let's have them all in output
-  if len(item["interfaceDetails"])>0:
-      print("there are extra details per interface",item.get("hostid"),", that is:",item["interfaceDetails"])
+  if len(item["interface_details"])>0:
+      print("there are extra details per interface",item.get("hostid"),", that is:",item["interface_details"])
       try:
-          item["authpassphrase"] = item["interfaceDetails"]['interfaceDetails']
+          item["community"] = item["interface_details"]['community']
+      except:
+          item["community"] = ""
+
+      try:
+          item["authpassphrase"] = item["interface_details"]['authpassphrase']
       except:
           item["authpassphrase"] = ""
           
       try:
-          item["authprotocol"] = item["interfaceDetails"]['authprotocol']
+          item["authprotocol"] = item["interface_details"]['authprotocol']
       except:
           item["authprotocol"] = ""
 
       try:
-          item["bulk"] = item["interfaceDetails"]['bulk']
+          item["bulk"] = item["interface_details"]['bulk']
       except:
            item["bulk"] = ""
 
       try:
-          item["contextname"] = item["interfaceDetails"]['contextname']
+          item["contextname"] = item["interface_details"]['contextname']
       except:
           item["contextname"] = ""
 
       try:
-          item["privpassphrase"] = item["interfaceDetails"]['privpassphrase']
+          item["privpassphrase"] = item["interface_details"]['privpassphrase']
       except:
           item["privpassphrase"] = ""
 
       try:
-          item["privprotocol"] = item["interfaceDetails"]['privprotocol']
+          item["privprotocol"] = item["interface_details"]['privprotocol']
       except:
           item["privprotocol"] = ""
 
       try:
-          item["securitylevel"] = item["interfaceDetails"]['securitylevel']
+          item["securitylevel"] = item["interface_details"]['securitylevel']
       except:
           item["securitylevel"] = ""
 
       try:
-          item["securityname"] = item["interfaceDetails"]['securityname']
+          item["securityname"] = item["interface_details"]['securityname']
       except:
           item["securityname"] = ""
 
       try:
-          item["version"] = item["interfaceDetails"]['version']
+          item["version"] = item["interface_details"]['version']
       except:
           item["version"] = ""
 
       #destroy original entity
-      item.pop("interfaceDetails")
+      item.pop("interface_details")
   else:
+      item["community"] = ""
       item["authpassphrase"] = ""
       item["authprotocol"] = ""
       item["bulk"] = ""
@@ -196,10 +202,52 @@ for item in listOfInterfaces:
       item["version"] = ""
 
       # destroy original entity
-      item.pop("interfaceDetails")
+      item.pop("interface_details")
+
+
+# manually go through host list and add the columns which reflect interface details
+for host in listOfHosts:
+    interfaceExists = 0
+    # iterate through interface
+    for interface in listOfInterfaces:
+
+        if host["hostid"]==interface["hostid"]:
+            # transfer interface fiels to general host table
+            host["community"] = interface["community"]
+            host["authpassphrase"] = interface["authpassphrase"]
+            host["authprotocol"] = interface["authprotocol"]
+            host["bulk"] = interface["bulk"]
+            host["contextname"] = interface["contextname"]
+            host["privpassphrase"] = interface["privpassphrase"]
+            host["privprotocol"] = interface["privprotocol"]
+            host["securitylevel"] = interface["securitylevel"]
+            host["securityname"] = interface["securityname"]
+            host["version"] = interface["version"]
+            host["interface_dns"] = interface["interface_dns"]
+            host["interface_ip"] = interface["interface_ip"]
+            host["interface_type"] = interface["interface_type"]
+            host["interface_port"] = interface["interface_port"]
+            interfaceExists = 1
+            break
+
+    if not interfaceExists:
+        host["community"] = ""
+        host["authpassphrase"] = ""
+        host["authprotocol"] = ""
+        host["bulk"] = ""
+        host["contextname"] = ""
+        host["privpassphrase"] = ""
+        host["privprotocol"] = ""
+        host["securitylevel"] = ""
+        host["securityname"] = ""
+        host["version"] = ""
+        host["interface_dns"] = ""
+        host["interface_ip"] = ""
+        host["interface_type"] = ""
+        host["interface_port"] = ""
 
 # merge 2 different lists together. It works like a magic and automatically locates the column name to do the mapping
-outcome = [json[0] | json[1] for json in zip(listOfHosts, listOfInterfaces)]
+outcome = listOfHosts
 pprint(outcome)
 
 macroList = [json[0] | json[1] for json in zip(listOfHostMacros,listOfHosts)]
