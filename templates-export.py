@@ -26,6 +26,7 @@ urllib3.disable_warnings()
 url = config.url_src_instance
 user = config.username_src_instance
 password = config.password_src_instance
+csv_export_dir = config.csv_export_dir
 
 # have support for JSON path
 # pip3.9 install jsonpath-ng
@@ -45,8 +46,8 @@ try:
 except:
     cannotMakeDir = 1
 
-# prepare a file to write host list
-templateListCSV = open('/tmp/templates.csv', 'w', newline='')
+# prepare a file to write template list
+templateListCSV = open(os.path.join(csv_export_dir, 'templates.csv'), 'w', newline='')
 csvTemplateList_writer = csv.writer(templateListCSV)
 
 # pick up token which will be used latter in script
@@ -121,14 +122,14 @@ for item in listOfTemplates:
                   cannotMakeDir = 1
               
               # open file for writing
-              f = open(  templateExportDir + '/' + globalGroup["name"] + '/' +item["TemplateName"]+'.xml', "a")
+              f = open(  templateExportDir + '/' + globalGroup["name"] + '/' +item["TemplateName"]+'.xml', "w")
               # write XML tempate content in file
               f.write(xmlTemplate)
               # close file
               f.close()
   
   # there will be one single directory too to have all template objects in one place
-  f = open(  templateExportDir + '/all/' + item["TemplateName"]+'.xml', "a")
+  f = open(  templateExportDir + '/all/' + item["TemplateName"]+'.xml', "w")
   f.write(xmlTemplate)
   f.close()
 

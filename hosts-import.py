@@ -113,17 +113,96 @@ for existingHost in listOfExistingHosts:
     "id": 1
                   }), verify=False).text))[0].value)
                 except:
-                    print("host create not possible")
+                    print("unable to create ZBX host")
 
                 
-            elif newHost["interfaceType"]==2:
+            elif newHost["interfaceType"]=='2':
+                print("new host is SNMP")
                 # this is SNMP host. Need to check version
-                if newHost["version"]==2:
+
+                if newHost["version"]=='2':
                     # this is SNMPv2 host
-                    something=2
-                elif newHost["version"]==3:
+                    try:
+                        # create a SNMPv3 host. SNMPv3 host has 9 characteristics
+                        print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
+ "jsonrpc": "2.0",
+    "method": "host.create",
+    "params": {
+        "host": newHost["hostName"],
+        "interfaces": [
+            {
+                "type": 2,
+                "main": 1,
+                "useip": 1,
+                "ip": newHost["IP_address"],
+                "dns": newHost["interface_DNS"],
+                "port": newHost["interfacePort"],
+                "details" : {
+                    "version": newHost["version"],
+                    "bulk": newHost["bulk"],
+                    "securityname": newHost["securityname"],
+                    "contextname": newHost["contextname"],
+                    "securitylevel": newHost["securitylevel"],
+                    "authpassphrase": newHost["authpassphrase"],
+                    "authprotocol": newHost["authprotocol"],
+                    "privpassphrase": newHost["privpassphrase"],
+                    "privprotocol": newHost["privprotocol"]
+                    }
+            }
+        ],
+        "groups": [
+            {
+                "groupid": "5"
+            }
+        ]
+    },
+    "auth": token,
+    "id": 1
+                  }), verify=False).text))[0].value)
+                    except:
+                        print("unable to create SNMPv2 host")
+
+                elif newHost["version"]=='3':
                     # this is SNMPv3 host
-                    something=3
+                    try:
+                        # create a SNMPv3 host. SNMPv3 host has 9 characteristics
+                        print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
+ "jsonrpc": "2.0",
+    "method": "host.create",
+    "params": {
+        "host": newHost["hostName"],
+        "interfaces": [
+            {
+                "type": 2,
+                "main": 1,
+                "useip": 1,
+                "ip": newHost["IP_address"],
+                "dns": newHost["interface_DNS"],
+                "port": newHost["interfacePort"],
+                "details" : {
+                    "version": newHost["version"],
+                    "bulk": newHost["bulk"],
+                    "securityname": newHost["securityname"],
+                    "contextname": newHost["contextname"],
+                    "securitylevel": newHost["securitylevel"],
+                    "authpassphrase": newHost["authpassphrase"],
+                    "authprotocol": newHost["authprotocol"],
+                    "privpassphrase": newHost["privpassphrase"],
+                    "privprotocol": newHost["privprotocol"]
+                    }
+            }
+        ],
+        "groups": [
+            {
+                "groupid": "5"
+            }
+        ]
+    },
+    "auth": token,
+    "id": 1
+                  }), verify=False).text))[0].value)
+                    except:
+                        print("unable to create SNMPv3 host")
                 else:
                     unknownSNMPversion=1
 
