@@ -77,26 +77,27 @@ for host in listOfHostsHavingTemplates:
 
         # analyze the rest of templates
         print("there is a todo list to go through")
-        for i in range(len(todo) - 1, -1, -1):
-            print(todo[i])
+        while len(todo)>0:
+            pprint(todo)
             dependencies = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
                     "jsonrpc": "2.0",
                     			"method": "template.get",
 			"params": {
-				"templateids": todo[i],
+				"templateids": todo[0],
 				"output": ["host","parentTemplates"],
 			"selectParentTemplates":"query"
     },
     "auth": token,
     "id": 1
     }), verify=False).text))[0].value
-            del todo[i]
+            todo.remove(todo[0])
             pprint(dependencies)
 
             for p in dependencies:
                 if len(p["parentTemplates"])>0:
                     for n in p["parentTemplates"]:
                         print(n["templateid"])
+                        todo.append(n["templateid"])
 
 
 
