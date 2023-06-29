@@ -134,7 +134,7 @@ for macro in listOfHostMacros:
             hostMacroWithHostName.append(row)
             break
 
-print(hostMacroWithHostName)
+#print(hostMacroWithHostName)
 
 
 # get list of interfaces. pick up only the "main" ones

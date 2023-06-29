@@ -42,11 +42,15 @@ import csv
 # format output better
 from pprint import pprint
 
-# load CSV files
+# assing CSV for reading
 listOfHostsCSV = open(csv_export_dir+'/hosts.csv','rt')
-listOfHosts = csv.DictReader(listOfHostsCSV)
+# convert to python native list
+listOfHosts = list(csv.DictReader(listOfHostsCSV))
+
 listOfHostMacrosCSV = open(csv_export_dir+'/macros.csv','rt')
-ListOfHostMacros = csv.DictReader(listOfHostMacrosCSV)
+# convert to python native list
+listOfHostMacros = list(csv.DictReader(listOfHostMacrosCSV))
+
 
 # pick up token which will be used latter in script
 payload = json.dumps({"jsonrpc":"2.0","method":"user.login","params":{"user":user,"password":password},"id":1})
@@ -68,27 +72,35 @@ listOfExistingHosts = parse('$.result').find(json.loads(requests.request("POST",
     "id": 1
 }), verify=False).text))[0].value
 
-# check host name in existing instance
-
+# create a nice list which contains only hostnames. nothing else
 existingHostsList = []
-
 for existingHost in listOfExistingHosts:
     existingHostsList.append(existingHost["host"])
 
+# go through all registred hosts in the destination instance
 for existingHost in listOfExistingHosts:
+
+    # take data from CSV
     for newHost in listOfHosts:
+
+        # check if object from CSV exists in the short host list
         if newHost["hostName"] in existingHostsList:
             print(bcolors.OKGREEN + "'" + newHost["hostName"] + "' already exists in destination"+ bcolors.ENDC)
         else:
+            # need to register new host
             print(bcolors.FAIL + "'"+newHost["hostName"] + "' is not yet registred")
 
-
             # define new list of macros which is about to be installed on this host
-            print(newHost["hostName"])
             newHostMacros = []
-            for macro in ListOfHostMacros:
-                if macro["hostName"]==newHost["hostName"]:
-                    print("found")
+
+            # print hostname on screen which exists in CSV
+            #print(newHost["hostName"])
+
+            # there can be mulitple lines in the list which match hostname
+            for macro in listOfHostMacros:
+                #print(macro["macro"])
+                if macro["hostName"] == newHost["hostName"]:
+                    #print("found one matching line in macros.csv")
                     # a host can have multiple macros
                     row = {}
                     # all columns must exist in CSV
@@ -98,9 +110,7 @@ for existingHost in listOfExistingHosts:
                     row["type"] = macro["type"]
                     newHostMacros.append(row)
 
-#            print(json.dumps(newHostMacros))
-            pprint(newHostMacros)
-
+            #pprint(newHostMacros)
 
             # check if this is ZBX host
             if newHost["interface_type"]=='1':
@@ -131,6 +141,7 @@ for existingHost in listOfExistingHosts:
     "auth": token,
     "id": 1
                   }), verify=False).text))[0].value)
+                    existingHostsList.append(newHost["hostName"])
                 except:
                     print("unable to create ZBX host")
 
@@ -167,11 +178,13 @@ for existingHost in listOfExistingHosts:
             {
                 "groupid": "5"
             }
-        ]
+        ],
+        "macros": newHostMacros
     },
     "auth": token,
     "id": 1
                   }), verify=False).text))[0].value)
+                        existingHostsList.append(newHost["hostName"])
                     except:
                         print("unable to create SNMPv2 host")
 
@@ -209,11 +222,13 @@ for existingHost in listOfExistingHosts:
             {
                 "groupid": "5"
             }
-        ]
+        ],
+        "macros": newHostMacros
     },
     "auth": token,
     "id": 1
                   }), verify=False).text))[0].value)
+                        existingHostsList.append(newHost["hostName"])
                     except:
                         print("unable to create SNMPv3 host")
                 else:
@@ -225,6 +240,11 @@ for existingHost in listOfExistingHosts:
 
 
 
+
 # close file for writing
+#listOfHostsCSV.close()
+#listOfHostMacrosCSV.close()
+# close files
 listOfHostsCSV.close()
 listOfHostMacrosCSV.close()
+
