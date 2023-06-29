@@ -63,7 +63,7 @@ response = requests.request("POST", url, headers=headers, data=payload, verify=F
 
 #print(response.text)
 token = parse('$.result').find(json.loads(response.text))[0].value
-print(token)
+#print(token)
 
 # get list of hosts
 listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
@@ -91,6 +91,19 @@ listOfHostMacros = parse('$.result').find(json.loads(requests.request("POST", ur
     "id": 1
     }), verify=False).text))[0].value
 
+# map host name to host macro table
+for host in listOfHosts:
+    
+    # iterate through all macros, map host title when hostid match
+    for macro in listOfHostMacros:
+
+        if host["hostid"]==macro["hostid"]:
+            # create new/additional element in JSON tree
+            macro["hostName"] = host["host"]
+
+
+pprint(listOfHostMacros)
+
 # rename elements in JSON tree to not conflict while mapping with other result
 for item in listOfHosts:
   item["hostName"] = item.pop("host")
@@ -100,7 +113,7 @@ for item in listOfHosts:
 
   templateBundle=''
   if len(item["parentTemplates"])>0:
-      print("there are",len(item["parentTemplates"]),"templates linked to ",item["hostName"])
+      #print("there are",len(item["parentTemplates"]),"templates linked to ",item["hostName"])
 
       for idx,elem in enumerate(item["parentTemplates"]):
           templateBundle+=elem["name"]
@@ -136,7 +149,7 @@ for item in listOfInterfaces:
   
   # per SNMPv2/SNMPv3 the amount of columns differ, let's have them all in output
   if len(item["interface_details"])>0:
-      print("there are extra details per interface",item.get("hostid"),", that is:",item["interface_details"])
+      #print("there are extra details per interface",item.get("hostid"),", that is:",item["interface_details"])
       try:
           item["community"] = item["interface_details"]['community']
       except:
@@ -248,7 +261,7 @@ for host in listOfHosts:
 
 # merge 2 different lists together. It works like a magic and automatically locates the column name to do the mapping
 outcome = listOfHosts
-pprint(outcome)
+#pprint(outcome)
 
 macroList = [json[0] | json[1] for json in zip(listOfHostMacros,listOfHosts)]
 # drop unnecessary columns
