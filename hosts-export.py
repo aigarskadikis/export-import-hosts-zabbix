@@ -91,19 +91,6 @@ listOfHostMacros = parse('$.result').find(json.loads(requests.request("POST", ur
     "id": 1
     }), verify=False).text))[0].value
 
-# map host name to host macro table
-for host in listOfHosts:
-    
-    # iterate through all macros, map host title when hostid match
-    for macro in listOfHostMacros:
-
-        if host["hostid"]==macro["hostid"]:
-            # create new/additional element in JSON tree
-            macro["hostName"] = host["host"]
-
-
-pprint(listOfHostMacros)
-
 # rename elements in JSON tree to not conflict while mapping with other result
 for item in listOfHosts:
   item["hostName"] = item.pop("host")
@@ -126,6 +113,29 @@ for item in listOfHosts:
 
   # count macros in output
   item["amountOfMacros"] = len(item.pop("macros"))
+
+# map host name to host macro table
+
+hostMacroWithHostName = []
+
+# go through reported macros and create annother list which has only the columns which are required for import
+for macro in listOfHostMacros:
+    for host in listOfHosts:
+        if host["hostid"]==macro["hostid"]:
+            row = {}
+            row["hostName"] = host["hostName"]
+            row["macro"] = macro["macro"]
+            row["type"] = macro["type"]
+            row["description"] = macro["description"]
+            try:
+                row["value"] = macro["value"]
+            except:
+                row["value"] = ""
+            hostMacroWithHostName.append(row)
+            break
+
+print(hostMacroWithHostName)
+
 
 # get list of interfaces. pick up only the "main" ones
 listOfInterfaces = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
@@ -259,39 +269,29 @@ for host in listOfHosts:
         host["interface_type"] = ""
         host["interface_port"] = ""
 
-# merge 2 different lists together. It works like a magic and automatically locates the column name to do the mapping
-outcome = listOfHosts
-#pprint(outcome)
-
-macroList = [json[0] | json[1] for json in zip(listOfHostMacros,listOfHosts)]
-# drop unnecessary columns
-for item in macroList:
-  item.pop("hostmacroid")
-  item.pop("hostid")
-  item.pop("type")
-  item.pop("maintenance_status")
-  item.pop("hostStatus")
-  item.pop("amountOfItems")
-  item.pop("amountOfTriggers")
-  item.pop("amountOfMacros")
+#pprint(listOfHostMacros)
 
 # write host list to a file
 count = 0
-for data in outcome:
+for data in listOfHosts:
     if count == 0:
         header = data.keys()
         csvHostList_writer.writerow(header)
         count += 1
     csvHostList_writer.writerow(data.values())
 
+#pprint(listOfHostMacros)
+
 # write macro list to a file
 count = 0
-for data in macroList:
-    if count == 0:
-        header = data.keys()
-        csvMacroList_writer.writerow(header)
-        count += 1
-    csvMacroList_writer.writerow(data.values())
+for data in hostMacroWithHostName:
+        if count == 0:
+            header = data.keys()
+            csvMacroList_writer.writerow(header)
+            count += 1
+        csvMacroList_writer.writerow(data.values())
+        #csvMacroList_writer.writerow(header)
+        #print(data.values())
 
 # close file for writing
 hostListCSV.close()
