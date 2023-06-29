@@ -57,7 +57,7 @@ listOfHostsHavingTemplates = parse('$.result').find(json.loads(requests.request(
     "id": 1
     }), verify=False).text))[0].value
 
-pprint(listOfHostsHavingTemplates)
+#pprint(listOfHostsHavingTemplates)
 
 # iterate through hosts
 for host in listOfHostsHavingTemplates:
@@ -77,22 +77,21 @@ for host in listOfHostsHavingTemplates:
 
         # analyze the rest of templates
         print("there is a todo list to go through")
-        for needToAnalyze in todo:
+        for i in range(len(todo) - 1, -1, -1):
+            print(todo[i])
             dependencies = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
                     "jsonrpc": "2.0",
                     			"method": "template.get",
 			"params": {
-				"templateids": needToAnalyze,
+				"templateids": todo[i],
 				"output": ["host","parentTemplates"],
-				"selectParentTemplates":"query"
+			"selectParentTemplates":"query"
     },
     "auth": token,
     "id": 1
     }), verify=False).text))[0].value
-            pprint(dependencies)
-            
+            del todo[i]
 
-        
 
 
 
