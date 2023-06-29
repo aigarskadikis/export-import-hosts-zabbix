@@ -93,9 +93,6 @@ for existingHost in listOfExistingHosts:
             # define new list of macros which is about to be installed on this host
             newHostMacros = []
 
-            # print hostname on screen which exists in CSV
-            #print(newHost["hostName"])
-
             # there can be mulitple lines in the list which match hostname
             for macro in listOfHostMacros:
                 #print(macro["macro"])
@@ -237,14 +234,6 @@ for existingHost in listOfExistingHosts:
             else:
                     notMatchinSNMPorZBX=1
 
-
-
-
-
-# close file for writing
-#listOfHostsCSV.close()
-#listOfHostMacrosCSV.close()
-# close files
 listOfHostsCSV.close()
 listOfHostMacrosCSV.close()
 

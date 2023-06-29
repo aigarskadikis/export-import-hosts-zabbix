@@ -1,4 +1,4 @@
-#!/bin/env python3.9
+#!/bin/env python3.6
 
 # cat /var/lib/zabbix/config.py
 # url = "http://127.0.0.1/api_jsonrpc.php"
