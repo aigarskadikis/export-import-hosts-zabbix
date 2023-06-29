@@ -82,7 +82,25 @@ for existingHost in listOfExistingHosts:
         else:
             print(bcolors.FAIL + "'"+newHost["hostName"] + "' is not yet registred")
 
-#            pprint(newHost)
+
+            # define new list of macros which is about to be installed on this host
+            print(newHost["hostName"])
+            newHostMacros = []
+            for macro in ListOfHostMacros:
+                if macro["hostName"]==newHost["hostName"]:
+                    print("found")
+                    # a host can have multiple macros
+                    row = {}
+                    # all columns must exist in CSV
+                    row["macro"] = macro["macro"]
+                    row["description"] = macro["description"]
+                    row["value"] = macro["value"]
+                    row["type"] = macro["type"]
+                    newHostMacros.append(row)
+
+#            print(json.dumps(newHostMacros))
+            pprint(newHostMacros)
+
 
             # check if this is ZBX host
             if newHost["interface_type"]=='1':
@@ -107,7 +125,8 @@ for existingHost in listOfExistingHosts:
             {
                 "groupid": "5"
             }
-        ]
+        ],
+        "macros": newHostMacros
     },
     "auth": token,
     "id": 1
