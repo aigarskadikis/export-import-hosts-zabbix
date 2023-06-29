@@ -61,45 +61,37 @@ listOfHostsHavingTemplates = parse('$.result').find(json.loads(requests.request(
 
 # iterate through hosts
 for host in listOfHostsHavingTemplates:
-    # set an empty array
-    templatesToExport = []
     # if this host has some templates
     if len(host["parentTemplates"])>0:
         # inform this host is having templates
         print(host["host"]+" is having",len(host["parentTemplates"]),"master templates")
-        # set an empty todo list
-        todo = []
-        # extract IDs
+        pprint(host["parentTemplates"])
+        # go through parent templates one by one
         for templateid in host["parentTemplates"]:
+            # set an empty todo list
+            todo = []
+            # set an empty array
+            templatesToExport = []
+            # add parrent to archive
             templatesToExport.append(templateid["templateid"])
+            # add parrent to todo list for analisis
             todo.append(templateid["templateid"])
-        pprint(templatesToExport)
 
-        # analyze the rest of templates
-        print("there is a todo list to go through")
-        while len(todo)>0:
-            pprint(todo)
-            dependencies = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
-                    "jsonrpc": "2.0",
-                    			"method": "template.get",
-			"params": {
-				"templateids": todo[0],
-				"output": ["host","parentTemplates"],
-			"selectParentTemplates":"query"
-    },
-    "auth": token,
-    "id": 1
+            # analyze the rest of templates
+            print("there is a todo list to go through")
+            while len(todo)>0:
+                dependencies = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
+                    "jsonrpc": "2.0","method": "template.get","params": {
+				"templateids": todo[0],	"output": ["host","parentTemplates"],"selectParentTemplates":"query" }, "auth": token,  "id": 1
     }), verify=False).text))[0].value
-            todo.remove(todo[0])
-            pprint(dependencies)
+                todo.remove(todo[0])
 
-            for p in dependencies:
-                if len(p["parentTemplates"])>0:
-                    for n in p["parentTemplates"]:
-                        print(n["templateid"])
-                        todo.append(n["templateid"])
-
-
-
+                for p in dependencies:
+                    if len(p["parentTemplates"])>0:
+                        for n in p["parentTemplates"]:
+                            todo.append(n["templateid"])
+                            templatesToExport.append(n["templateid"])
+            print("total amount of templates to export per '"+templateid["templateid"]+"' is: ")
+            print(templatesToExport)
 
 
