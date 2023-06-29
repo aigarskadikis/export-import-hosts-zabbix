@@ -91,6 +91,13 @@ for host in listOfHostsHavingTemplates:
     "id": 1
     }), verify=False).text))[0].value
             del todo[i]
+            pprint(dependencies)
+
+            for p in dependencies:
+                if len(p["parentTemplates"])>0:
+                    for n in p["parentTemplates"]:
+                        print(n["templateid"])
+
 
 
 
