@@ -42,6 +42,7 @@ response = requests.request("POST", url, headers=headers, data=payload, verify=F
 #print(response.text)
 token = parse('$.result').find(json.loads(response.text))[0].value
 
+
 # listing all hosts and attached master templates
 listOfHostsHavingTemplates = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
     "jsonrpc": "2.0",
@@ -56,5 +57,22 @@ listOfHostsHavingTemplates = parse('$.result').find(json.loads(requests.request(
     }), verify=False).text))[0].value
 
 pprint(listOfHostsHavingTemplates)
+
+for host in listOfHostsHavingTemplates:
+    if len(host["parentTemplates"])>0:
+        print(host["host"]+" is having",len(host["parentTemplates"]),"master templates")
+
+        # extract IDs
+        IDs = []
+        for templateid in host["parentTemplates"]:
+            IDs.append(templateid["templateid"])
+        pprint(IDs)
+
+
+
+
+
+
+
 
 
