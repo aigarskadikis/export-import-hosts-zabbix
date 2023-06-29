@@ -67,10 +67,30 @@ for host in listOfHostsHavingTemplates:
     if len(host["parentTemplates"])>0:
         # inform this host is having templates
         print(host["host"]+" is having",len(host["parentTemplates"]),"master templates")
+        # set an empty todo list
+        todo = []
         # extract IDs
         for templateid in host["parentTemplates"]:
             templatesToExport.append(templateid["templateid"])
+            todo.append(templateid["templateid"])
         pprint(templatesToExport)
+
+        # analyze the rest of templates
+        print("there is a todo list to go through")
+        for needToAnalyze in todo:
+            dependencies = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
+                    "jsonrpc": "2.0",
+                    			"method": "template.get",
+			"params": {
+				"templateids": needToAnalyze,
+				"output": ["host","parentTemplates"],
+				"selectParentTemplates":"query"
+    },
+    "auth": token,
+    "id": 1
+    }), verify=False).text))[0].value
+            pprint(dependencies)
+            
 
         
 
