@@ -33,6 +33,13 @@ import csv
 # format output better
 from pprint import pprint
 
+templateExportDir = config.zabbix_templates_export_dir
+# create a sub directory 'all'
+try:
+    os.makedirs(os.path.join(templateExportDir,'nested'))
+except:
+    cannotMakeDir = 1
+
 # pick up token which will be used latter in script
 payload = json.dumps({"jsonrpc":"2.0","method":"user.login","params":{"user":user,"password":password},"id":1})
 headers = {'Content-Type': 'application/json'}
@@ -49,7 +56,6 @@ listOfHostsHavingTemplates = parse('$.result').find(json.loads(requests.request(
     "jsonrpc": "2.0",
     "method": "host.get",
     "params": {
-        "hostids" : ["11889","13464","13726"],
         "output": ["parentTemplates","host","hostid"],
         "selectParentTemplates": "query"
     },
@@ -93,5 +99,23 @@ for host in listOfHostsHavingTemplates:
                             templatesToExport.append(n["templateid"])
             print("total amount of templates to export per '"+templateid["templateid"]+"' is: ")
             print(templatesToExport)
+
+            # export template bundle
+            xmlTemplateBundle = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
+   "jsonrpc": "2.0",
+    "method": "configuration.export",
+    "params": { "options": { "templates": templatesToExport },
+        "format": "xml"
+    },
+    "auth": token,
+    "id": 1
+          }), verify=False).text))[0].value
+
+            path = os.path.join(templateExportDir,templateid["templateid"])
+            f = open( templateExportDir + '/nested/' + templateid["templateid"] + '.xml', "w")
+            f.write(xmlTemplateBundle)
+            f.close()
+
+
 
 
