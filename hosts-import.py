@@ -99,8 +99,7 @@ for newHost in listOfHosts:
             break
 
     if hostExists:
-        #print(bcolors.OKGREEN + "'" + newHost["hostName"] + "' already exists in destination"+ bcolors.ENDC)
-        already=1
+        print(bcolors.OKGREEN+'h'+existingHost["hostid"]+'(exists) '+bcolors.ENDC,end='', flush=True)
     else:
         # need to register new host
         print(bcolors.FAIL + "host '"+newHost["hostName"] + "' is not yet registred. will register it now:")
@@ -158,66 +157,61 @@ for newHost in listOfHosts:
                     print("template '"+oneOfTemplatesToAdd+"' not found. will import it now by using '"+ locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+".xml'")
 
                     # check in file system if such template object exists
+                    with open(locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+'.xml', 'r') as file:
+                        templateXMLtoImport = file.read().replace('\n', '')
+
+                    uploadTemplatePayload=json.dumps({"jsonrpc":"2.0",
+                        "method":"configuration.import",
+                        "params":{
+                            "format":"xml",
+                            "rules":{
+                                    "groups":{"createMissing":True,"updateExisting":True},
+                                    "templates":{"createMissing":True,"updateExisting":True},
+                                    "valueMaps":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                    "templateDashboards":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                    "templateLinkage":{"createMissing":True,"deleteMissing":False},
+                                    "items":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                    "discoveryRules":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                    "triggers":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                    "graphs":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                    "httptests":{"createMissing":True,"updateExisting":True,"deleteMissing":True}
+                                    },
+                            "source": templateXMLtoImport},
+                        "auth":token,"id":1})
                     try:
-                        with open(locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+'.xml', 'r') as file:
-                            templateXMLtoImport = file.read().replace('\n', '')
+                        outputOfUpload = parse('$.result').find(json.loads(
+                            requests.request("POST",url,headers=headers,data=uploadTemplatePayload,verify=False).text))[0].value
+                    except Exception as e:
+                        print("template import API call failed"+ str(e))
 
-                            uploadTemplatePayload=json.dumps({"jsonrpc":"2.0",
-                                "method":"configuration.import",
-                                "params":{
-                                    "format":"xml",
-                                    "rules":{
-                                        "groups":{"createMissing":True,"updateExisting":True},
-                                        "templates":{"createMissing":True,"updateExisting":True},
-                                        "valueMaps":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
-                                        "templateDashboards":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
-                                        "templateLinkage":{"createMissing":True,"deleteMissing":False},
-                                        "items":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
-                                        "discoveryRules":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
-                                        "triggers":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
-                                        "graphs":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
-                                        "httptests":{"createMissing":True,"updateExisting":True,"deleteMissing":True}
-                                        },
-                                    "source": templateXMLtoImport},
-                                "auth":token,"id":1})
-
-                            # this is to troubleshoot if API call does not work
-                            #print(uploadTemplatePayload)
-                            outputOfUpload = parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=uploadTemplatePayload,verify=False).text))[0].value
-#                            print(outputOfUpload)
-
-                            # do a follow up and check if template exists, pick up tamplate ID
-                            #sleep(1000)
-                            newTemplateID = parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=json.dumps({"jsonrpc":"2.0",
+                    newTemplateID = parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=json.dumps({"jsonrpc":"2.0",
                                 "method":"template.get",
                                 "params":{
                                     "output":["templateid"],
                                     "search":{"host":oneOfTemplatesToAdd},
                                     "searchWildcardsEnabled":1
-                                    },
-"auth":token,"id":1}),verify=False).text))[0].value
-
-                            try:
-                                # add new template name to virtual list
-                                row = {}
-                                row["host"] = oneOfTemplatesToAdd
-                                row["templateid"] = newTemplateID[0]["templateid"]
-                                pprint(row)
-                                listOfExistingTemplates.append(row)
-                            except:
-                                print("cannot add variable to global templates list for destination")
-
-                            try:
-                                row = {}
-                                row["templateid"] = newTemplateID[0]["templateid"]
-                                templateIDsToAdd.append(row)
-                            except:
-                                print("cannot prepare template list payload for host.create function")
+                                   },"auth":token,"id":1}),verify=False).text))[0].value
+                    
+                    print(bcolors.OKGREEN+'templateid='+newTemplateID[0]["templateid"]+bcolors.ENDC,end='', flush=True)
 
 
+                    try:
+                        # add new template name to virtual list
+                        row = {}
+                        row["host"] = oneOfTemplatesToAdd
+                        row["templateid"] = newTemplateID[0]["templateid"]
+                        pprint(row)
+                        listOfExistingTemplates.append(row)
+                    except Exception as e:
+                        print("cannot add variable to global templates list for destination"+str(e))
+
+                    try:
+                        row = {}
+                        row["templateid"] = newTemplateID[0]["templateid"]
+                        templateIDsToAdd.append(row)
                     except:
-                        print("cannot find file in file system or API call fails. or maybe template is using special characters")
-                        allTemplatesExist=0
+                        print("cannot prepare template list payload for host.create function")
+
 
         if allTemplatesExist == 1:
             if newHost["interface_type"]=='1':

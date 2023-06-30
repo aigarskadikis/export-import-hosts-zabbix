@@ -132,7 +132,7 @@ for host in listOfHostsHavingTemplates:
                 "auth": token,"id": 1}), verify=False).text))[0].value
 
                 path = os.path.join(templateExportDir,'nested/',)
-                f = open( path + nameOfMaster + '.xml', "w")
+                f = open( path + nameOfMaster + '.xml', "w", encoding='utf-8')
                 f.write(xmlTemplateBundle)
                 f.close()
             else:
