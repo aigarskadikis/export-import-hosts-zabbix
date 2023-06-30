@@ -82,13 +82,10 @@ headers = {'Content-Type': 'application/json'}
 
 response = requests.request("POST", url, headers=headers, data=payload, verify=False)
 
-#print(response.text)
 token = parse('$.result').find(json.loads(response.text))[0].value
-#print(token)
 
 # get list of hosts
-listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
-    "jsonrpc": "2.0",
+listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
     "method": "host.get",
     "params": {
         "output":["host","hostid","status","maintenance_status","groups"],
@@ -96,49 +93,35 @@ listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, he
         "selectParentTemplates": ["host"],
         "selectTriggers": "count",
         "selectMacros": "extend",
-        "selectGroups":"query"
-        
-    },
-    "auth": token,
-    "id": 1
-}), verify=False).text))[0].value
+        "selectGroups":"query"},
+    "auth": token, "id": 1}), verify=False).text))[0].value
 
-
-listOfHostMacros = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
-    "jsonrpc": "2.0",
+listOfHostMacros = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
     "method": "usermacro.get",
     "params": {
-        "output": "extend"
-    },
-    "auth": token,
-    "id": 1
-    }), verify=False).text))[0].value
+        "output":"extend"},
+    "auth": token,"id": 1}), verify=False).text))[0].value
 
 # rename elements in JSON tree to not conflict while mapping with other result
-for item in listOfHosts:
-  item["hostName"] = item.pop("host")
-  item["hostStatus"] = item.pop("status")
-  item["amountOfItems"] = item.pop("items")
-  item["amountOfTriggers"] = item.pop("triggers")
-
-  templateBundle=''
-  if len(item["parentTemplates"])>0:
-      #print("there are",len(item["parentTemplates"]),"templates linked to ",item["hostName"])
-
-      for idx,elem in enumerate(item["parentTemplates"]):
-          templateBundle+=elem["host"]
-          # if not last element
-          if idx!=len(item["parentTemplates"])-1:
-              templateBundle+=';'
-  item["templateBundle"] = templateBundle
-  # remove parentTemplates after parsing
-  item.pop("parentTemplates")
-
-  # count macros in output
-  item["amountOfMacros"] = len(item.pop("macros"))
+for host in listOfHosts:
+    host["hostName"] = host.pop("host")
+    host["hostStatus"] = host.pop("status")
+    host["amountOfItems"] = host.pop("items")
+    host["amountOfTriggers"] = host.pop("triggers")
+    templateBundle=''
+    if len(host["parentTemplates"])>0:
+        for idx,elem in enumerate(host["parentTemplates"]):
+            templateBundle+=elem["host"]
+            # if not last element
+            if idx!=len(host["parentTemplates"])-1:
+                templateBundle+=';'
+    host["templateBundle"] = templateBundle
+    # remove parentTemplates after parsing
+    host.pop("parentTemplates")
+    # count macros in output
+    host["amountOfMacros"] = len(host.pop("macros"))
 
 # map host name to host macro table
-
 hostMacroWithHostName = []
 
 # go through reported macros and create annother list which has only the columns which are required for import
@@ -157,98 +140,90 @@ for macro in listOfHostMacros:
             hostMacroWithHostName.append(row)
             break
 
-#print(hostMacroWithHostName)
-
-
 # get list of interfaces. pick up only the "main" ones
-listOfInterfaces = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
-    "jsonrpc": "2.0",
+listOfInterfaces = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
     "method": "hostinterface.get",
     "params": {
         "output": ["hostid","ip","dns","type","details","port"],
-        "filter": {"main":1}
-    },
-    "auth": token,
-    "id": 1
-}), verify=False).text))[0].value
+        "filter": {"main":1}},
+"auth": token,"id": 1}), verify=False).text))[0].value
 
 # rename elements in JSON tree to not conflict while mapping with other result
-for item in listOfInterfaces:
-  item["interface_dns"] = item.pop("dns")
-  item["interface_ip"] = item.pop("ip")
-  item["interface_details"] = item.pop("details")
-  item["interface_type"] = item.pop("type")
-  item["interface_port"] = item.pop("port")
+for interface in listOfInterfaces:
+  interface["interface_dns"] = interface.pop("dns")
+  interface["interface_ip"] = interface.pop("ip")
+  interface["interface_details"] = interface.pop("details")
+  interface["interface_type"] = interface.pop("type")
+  interface["interface_port"] = interface.pop("port")
   
   # per SNMPv2/SNMPv3 the amount of columns differ, let's have them all in output
-  if len(item["interface_details"])>0:
-      #print("there are extra details per interface",item.get("hostid"),", that is:",item["interface_details"])
+  if len(interface["interface_details"])>0:
       try:
-          item["community"] = item["interface_details"]['community']
+          interface["community"] = interface["interface_details"]['community']
       except:
-          item["community"] = ""
+          interface["community"] = ""
 
       try:
-          item["authpassphrase"] = item["interface_details"]['authpassphrase']
+          interface["authpassphrase"] = interface["interface_details"]['authpassphrase']
       except:
-          item["authpassphrase"] = ""
+          interface["authpassphrase"] = ""
           
       try:
-          item["authprotocol"] = item["interface_details"]['authprotocol']
+          interface["authprotocol"] = interface["interface_details"]['authprotocol']
       except:
-          item["authprotocol"] = ""
+          interface["authprotocol"] = ""
 
       try:
-          item["bulk"] = item["interface_details"]['bulk']
+          interface["bulk"] = interface["interface_details"]['bulk']
       except:
-           item["bulk"] = ""
+           interface["bulk"] = ""
 
       try:
-          item["contextname"] = item["interface_details"]['contextname']
+          interface["contextname"] = interface["interface_details"]['contextname']
       except:
-          item["contextname"] = ""
+          interface["contextname"] = ""
 
       try:
-          item["privpassphrase"] = item["interface_details"]['privpassphrase']
+          interface["privpassphrase"] = interface["interface_details"]['privpassphrase']
       except:
-          item["privpassphrase"] = ""
+          interface["privpassphrase"] = ""
 
       try:
-          item["privprotocol"] = item["interface_details"]['privprotocol']
+          interface["privprotocol"] = interface["interface_details"]['privprotocol']
       except:
-          item["privprotocol"] = ""
+          interface["privprotocol"] = ""
 
       try:
-          item["securitylevel"] = item["interface_details"]['securitylevel']
+          interface["securitylevel"] = interface["interface_details"]['securitylevel']
       except:
-          item["securitylevel"] = ""
+          interface["securitylevel"] = ""
 
       try:
-          item["securityname"] = item["interface_details"]['securityname']
+          interface["securityname"] = interface["interface_details"]['securityname']
       except:
-          item["securityname"] = ""
+          interface["securityname"] = ""
 
       try:
-          item["version"] = item["interface_details"]['version']
+          interface["version"] = interface["interface_details"]['version']
       except:
-          item["version"] = ""
+          interface["version"] = ""
 
       #destroy original entity
-      item.pop("interface_details")
+      interface.pop("interface_details")
   else:
-      item["community"] = ""
-      item["authpassphrase"] = ""
-      item["authprotocol"] = ""
-      item["bulk"] = ""
-      item["contextname"] = ""
-      item["privpassphrase"] = ""
-      item["privprotocol"] = ""
-      item["securitylevel"] = ""
-      item["securityname"] = ""
-      item["version"] = ""
+      interface["community"] = ""
+      interface["authpassphrase"] = ""
+      interface["authprotocol"] = ""
+      interface["bulk"] = ""
+      interface["contextname"] = ""
+      interface["privpassphrase"] = ""
+      interface["privprotocol"] = ""
+      interface["securitylevel"] = ""
+      interface["securityname"] = ""
+      interface["version"] = ""
 
       # destroy original entity
-      item.pop("interface_details")
+      interface.pop("interface_details")
 
 
 # manually go through host list and add the columns which reflect interface details
@@ -319,6 +294,4 @@ if not opts.group:
 
 else:
     nameOfCustomHostGroup = opts.group
-
-
 
