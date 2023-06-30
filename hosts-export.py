@@ -303,6 +303,10 @@ else:
         if selectedHostGroup["name"] == opts.group:
             print("'"+opts.group+"' found")
             selectedHostGroupExists=1
+            if len(selectedHostGroup["hosts"])>0:
+                print("host group contains hosts:",selectedHostGroup["hosts"])
+            else:
+                print("host group is empty")
             break
 
     if not selectedHostGroupExists:
