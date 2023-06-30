@@ -77,6 +77,16 @@ listOfExistingHosts = parse('$.result').find(json.loads(requests.request("POST",
     "id": 1
 }), verify=False).text))[0].value
 
+# existing templates
+listOfExistingTemplates = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
+    "jsonrpc": "2.0",
+    "method": "template.get",
+    "params": {
+        "output":["host","templateid"]
+    },
+    "auth": token,
+    "id": 1
+}), verify=False).text))[0].value
 
 # take new host
 for newHost in listOfHosts:
@@ -89,10 +99,11 @@ for newHost in listOfHosts:
             break
 
     if hostExists:
-        print(bcolors.OKGREEN + "'" + newHost["hostName"] + "' already exists in destination"+ bcolors.ENDC)
+        #print(bcolors.OKGREEN + "'" + newHost["hostName"] + "' already exists in destination"+ bcolors.ENDC)
+        already=1
     else:
         # need to register new host
-        print(bcolors.FAIL + "'"+newHost["hostName"] + "' is not yet registred")
+        print(bcolors.FAIL + "host '"+newHost["hostName"] + "' is not yet registred. will register it now:")
 
         # define new list of macros which is about to be installed on this host
         newHostMacros = []
@@ -113,53 +124,72 @@ for newHost in listOfHosts:
 
         # pick up template bundle
         templatesToAdd = newHost["templateBundle"].split(';')
-        pprint(templatesToAdd)
+        print("template names which needs to be attached to this host:",templatesToAdd)
 
-        # validate if name of template already exists in destination
+        # keep in track tmeplate IDs to add
         templateIDsToAdd = []
 
-        for checkIfTemplateExists in templatesToAdd:
-            result = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
-                "method": "template.get",
-                "params": {
-                    "output":["templateid"],
-                    "search":{"host":checkIfTemplateExists}
-                    },
-                "auth":token,"id":1}),verify=False).text))[0].value
-            if len(result)>0:
-                print("'"+checkIfTemplateExists+"' template exists")
-                pprint(result)
-                #templateIDsToAdd.append(result["templateid"])
-            else:
-                print("not found template '"+checkIfTemplateExists+"'")
+        # if template list is not empty
+        if len(templatesToAdd)>0:
+            print("analyze templates which needs to be linked to new host")
+            # analyze what is inside
+            for oneOfTemplatesToAdd in templatesToAdd:
+                # lets assume this template does not exist in destination
+                templateIdInDestination = 0
+                # go through all templates and look up if template exists
+                for existingTemplate in listOfExistingTemplates:
+                    if existingTemplate["host"] == oneOfTemplatesToAdd:
+                        templateIdInDestination = existingTemplate["templateid"]
+                
+                print(templateIdInDestination)
+                # if api reported a non-empty output, the template ID exists.
+                if templateIdInDestination:
+                    # add template to list which be attached to host object
+                    templateIDsToAdd.append(templateIdInDestination)
+                else:
+                    print("template '"+oneOfTemplatesToAdd+"' not found. will import it now..")
 
-                # check in file system if such template object exists
-                try:
-                    with open(locationOfTemplateBundles+'/'+checkIfTemplateExists+'.xml', 'r') as file:
-                        templateXMLtoImport = file.read().replace('\n', '')
-#                        print(templateXMLtoImport)
+                    # check in file system if such template object exists
+                    try:
+                        with open(locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+'.xml', 'r') as file:
+                            templateXMLtoImport = file.read().replace('\n', '')
 
-                        payload=json.dumps({"jsonrpc":"2.0",
-                            "method":"configuration.import",
-                            "params":{
-                                "format":"xml",
-                                "rules":{
-                                    "groups":{"createMissing":True,"updateExisting":True},
-                                    "templates":{"createMissing":True,"updateExisting":True},
-                                    "items":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
-                                    "triggers":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
-                                    "valueMaps":{"createMissing":True,"updateExisting":True}
+                            payload=json.dumps({"jsonrpc":"2.0",
+                                "method":"configuration.import",
+                                "params":{
+                                    "format":"xml",
+                                    "rules":{
+                                        "groups":{"createMissing":True,"updateExisting":True},
+                                        "templates":{"createMissing":True,"updateExisting":True},
+                                        "items":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                        "triggers":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                        "valueMaps":{"createMissing":True,"updateExisting":True}
+                                        },
+                                    "source": templateXMLtoImport},
+                                "auth":token,"id":1})
+                            print(parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=payload,verify=False).text))[0].value)
+
+                            # do a follow up and check if template exists, pick up tamplate ID
+                            newTemplateID = parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=json.dumps({"jsonrpc":"2.0",
+                                "method":"template.get",
+                                "params":{
+                                    "output":["templateid"],
+                                    "search":{"host":oneOfTemplatesToAdd},
+                                    "searchWildcardsEnabled":1
                                     },
-                                "source": templateXMLtoImport},
-                            "auth":token,"id":1})
-                        print(parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=payload,verify=False).text))[0].value)
+"auth":token,"id":1}),verify=False).text))[0].value
+                            print(newTemplateID)
 
+                            templateIDsToAdd.append(newTemplateID[0]["templateid"])
 
-                except:
-                    print("file '"+checkIfTemplateExists+"' does not exists in",locationOfTemplateBundles)
+                            # add new template name to virtual list
+                            row = {}
+                            row["host"] = oneOfTemplatesToAdd
+                            row["templateid"] = newTemplateID
+                            listOfExistingTemplates.append(row)
 
-#                print(parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=payload,verify=False).text))[0].value)
-
+                    except:
+                        print("cannot find file in file system or API call fails")
 
 
         # check if this is ZBX host

@@ -72,7 +72,7 @@ listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, he
     "params": {
         "output":["host","hostid","status","maintenance_status"],
         "selectItems": "count",
-        "selectParentTemplates": ["name"],
+        "selectParentTemplates": ["host"],
         "selectTriggers": "count",
         "selectMacros": "extend"
         
@@ -103,7 +103,7 @@ for item in listOfHosts:
       #print("there are",len(item["parentTemplates"]),"templates linked to ",item["hostName"])
 
       for idx,elem in enumerate(item["parentTemplates"]):
-          templateBundle+=elem["name"]
+          templateBundle+=elem["host"]
           # if not last element
           if idx!=len(item["parentTemplates"])-1:
               templateBundle+=';'
