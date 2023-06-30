@@ -20,11 +20,16 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
+
 # shortify vairables
 url = config.url_dest_instance
 user = config.username_dest_instance
 password = config.password_dest_instance
 csv_export_dir = config.csv_export_dir
+
+templateExportDir = config.zabbix_templates_export_dir
+
+locationOfTemplateBundles = os.path.join(templateExportDir,'nested')
 
 try:
     os.makedirs(csv_export_dir)
@@ -110,19 +115,51 @@ for newHost in listOfHosts:
         templatesToAdd = newHost["templateBundle"].split(';')
         pprint(templatesToAdd)
 
-        # validate if templates already exists
+        # validate if name of template already exists in destination
+        templateIDsToAdd = []
+
         for checkIfTemplateExists in templatesToAdd:
             result = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
                 "method": "template.get",
                 "params": {
                     "output":["templateid"],
-                    "search":{"host": checkIfTemplateExists}
+                    "search":{"host":checkIfTemplateExists}
                     },
-                "auth": token,"id": 1}), verify=False).text))[0].value
+                "auth":token,"id":1}),verify=False).text))[0].value
             if len(result)>0:
                 print("'"+checkIfTemplateExists+"' template exists")
+                pprint(result)
+                #templateIDsToAdd.append(result["templateid"])
             else:
                 print("not found template '"+checkIfTemplateExists+"'")
+
+                # check in file system if such template object exists
+                try:
+                    with open(locationOfTemplateBundles+'/'+checkIfTemplateExists+'.xml', 'r') as file:
+                        templateXMLtoImport = file.read().replace('\n', '')
+#                        print(templateXMLtoImport)
+
+                        payload=json.dumps({"jsonrpc":"2.0",
+                            "method":"configuration.import",
+                            "params":{
+                                "format":"xml",
+                                "rules":{
+                                    "groups":{"createMissing":True,"updateExisting":True},
+                                    "templates":{"createMissing":True,"updateExisting":True},
+                                    "items":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                    "triggers":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                    "valueMaps":{"createMissing":True,"updateExisting":True}
+                                    },
+                                "source": templateXMLtoImport},
+                            "auth":token,"id":1})
+                        print(parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=payload,verify=False).text))[0].value)
+
+
+                except:
+                    print("file '"+checkIfTemplateExists+"' does not exists in",locationOfTemplateBundles)
+
+#                print(parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=payload,verify=False).text))[0].value)
+
 
 
         # check if this is ZBX host
@@ -130,14 +167,20 @@ for newHost in listOfHosts:
             try:
                 # create a Zabbix agent host
                 print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
-                    "method": "host.create",
-                    "params": {
-                        "host": newHost["hostName"],
-                        "interfaces":[{"type":1,"main":1,"useip":1,"ip":newHost["interface_ip"],"dns":newHost["interface_dns"],"port":newHost["interface_port"]}],
-                        "groups": [{"groupid":"5"}],
-                        "macros": newHostMacros
+                    "method":"host.create",
+                    "params":{
+                        "host":newHost["hostName"],
+                        "interfaces":[{
+                            "type":1,
+                            "main":1,
+                            "useip":1,
+                            "ip":newHost["interface_ip"],
+                            "dns":newHost["interface_dns"],
+                            "port":newHost["interface_port"]}],
+                        "groups":[{"groupid":"5"}],
+                        "macros":newHostMacros
                         },
-                "auth": token,"id": 1}), verify=False).text))[0].value)
+                "auth": token,"id":1}),verify=False).text))[0].value)
             except:
                 print("unable to create ZBX host")
 
@@ -151,13 +194,21 @@ for newHost in listOfHosts:
                 try:
                     # create a SNMPv3 host. SNMPv3 host has 9 characteristics
                     print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
-                        "method": "host.create",
-                        "params": {
-                            "host": newHost["hostName"],
-                            "interfaces":[{"type":2,"main":1,"useip":1,"ip":newHost["interface_ip"],"dns": newHost["interface_dns"],"port": newHost["interface_port"],"details":{"community": newHost["community"],"bulk": newHost["bulk"],"version":newHost["version"]}}],
-                            "groups": [{"groupid": "5"}],
-                            "macros": newHostMacros
-                            },
+                        "method":"host.create",
+                        "params":{
+                            "host":newHost["hostName"],"interfaces":[{
+                                "type":2,
+                                "main":1,
+                                "useip":1,
+                                "ip":newHost["interface_ip"],
+                                "dns":newHost["interface_dns"],
+                                "port":newHost["interface_port"],
+                                "details":{
+                                    "community":newHost["community"],
+                                    "bulk":newHost["bulk"],
+                                    "version":newHost["version"]}}],
+                            "groups":[{"groupid":"5"}],
+                            "macros":newHostMacros},
                     "auth": token,"id": 1}), verify=False).text))[0].value)
                     existingHostsList.append(newHost["hostName"])
                 except:
