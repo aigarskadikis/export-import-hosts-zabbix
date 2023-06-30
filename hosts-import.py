@@ -153,7 +153,6 @@ for newHost in listOfHosts:
                     templateIDsToAdd.append(row)
                     
                 else:
-                    #print("template '"+oneOfTemplatesToAdd+"' not found. will import it now by using '"+ locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+".xml'")
 
                     # check in file system if such template object exists
                     try:
@@ -189,7 +188,7 @@ for newHost in listOfHosts:
                             newTemplateID = parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=json.dumps({"jsonrpc":"2.0",
                                 "method":"template.get",
                                 "params":{
-                                    "output":["templateid"],
+                                    "output":["templateid","host"],
                                     "search":{"host":oneOfTemplatesToAdd},
                                     "searchWildcardsEnabled":1
                                     },
@@ -200,7 +199,7 @@ for newHost in listOfHosts:
                                 row = {}
                                 row["host"] = oneOfTemplatesToAdd
                                 row["templateid"] = newTemplateID[0]["templateid"]
-                                pprint(row)
+                                print("new template '"+newTemplateID[0]["host"]+"', ",end='', flush=True)
                                 listOfExistingTemplates.append(row)
                             except:
                                 print("cannot add variable to global templates list for destination")
@@ -214,7 +213,7 @@ for newHost in listOfHosts:
 
 
                     except:
-                        print(bcolors.FAIL +"import template '"+ oneOfTemplatesToAdd  + "' failed. try manually importing '"+ locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+".xml', and rerun script. cannot register host '"+newHost["hostName"]+"', "+ bcolors.ENDC,end='', flush=True)
+                        print(bcolors.FAIL +"import template '"+ oneOfTemplatesToAdd  + "' failed, therefore cannot register host '"+newHost["hostName"]+". try manually importing '"+ locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+".xml', and rerun script. "+ bcolors.ENDC,end='', flush=True)
                         allTemplatesExist=0
 
         if allTemplatesExist == 1:
@@ -237,7 +236,7 @@ for newHost in listOfHosts:
                             "templates":templateIDsToAdd
                             },
                     "auth": token,"id":1}),verify=False).text))[0].value
-                    print("'"+newHost["hostName"]+"', ")
+                    print("new ZBX host '"+newHost["hostName"]+"', ",end='', flush=True)
                 except:
                     print("unable to create ZBX host")
 
@@ -250,7 +249,7 @@ for newHost in listOfHosts:
                     # this is SNMPv2 host
                     try:
                         # create a SNMPv3 host. SNMPv3 host has 9 characteristics
-                        print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+                        parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
                             "method":"host.create",
                             "params":{
                                 "host":newHost["hostName"],"interfaces":[{
@@ -265,9 +264,10 @@ for newHost in listOfHosts:
                                         "bulk":newHost["bulk"],
                                         "version":newHost["version"]}}],
                                 "groups":[{"groupid":"5"}],
-                                "macros":newHostMacros},
-                        "auth": token,"id": 1}), verify=False).text))[0].value)
-                        existingHostsList.append(newHost["hostName"])
+                                "macros":newHostMacros,
+                                "templates":templateIDsToAdd},
+                        "auth": token,"id": 1}), verify=False).text))[0].value
+                        print("new SNMPv2 host '"+newHost["hostName"]+"', ",end='', flush=True)
                     except:
                         print("unable to create SNMPv2 host")
 
@@ -275,7 +275,7 @@ for newHost in listOfHosts:
                     # this is SNMPv3 host
                     try:
                         # create a SNMPv3 host. SNMPv3 host has 9 characteristics
-                        print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+                        parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
                             "method":"host.create",
                             "params":{
                                 "host":newHost["hostName"],"interfaces":[{
@@ -296,10 +296,11 @@ for newHost in listOfHosts:
                                         "privpassphrase":newHost["privpassphrase"],
                                         "privprotocol":newHost["privprotocol"]}}],
                                     "groups":[{"groupid":"5"}],
-                                    "macros":newHostMacros
+                                    "macros":newHostMacros,
+                                    "templates":templateIDsToAdd
                                     },
-                        "auth":token,"id":1}),verify=False).text))[0].value)
-                        existingHostsList.append(newHost["hostName"])
+                        "auth":token,"id":1}),verify=False).text))[0].value
+                        print("new SNMPv3 host '"+newHost["hostName"]+"', ",end='', flush=True)
                     except:
                         print("unable to create SNMPv3 host")
                 else:
@@ -309,7 +310,7 @@ for newHost in listOfHosts:
             elif newHost["interface_type"]=='4':
                 try:
                     # create a Zabbix agent host
-                    print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
+                    parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
                         "method":"host.create",
                         "params":{
                             "host":newHost["hostName"],
@@ -321,9 +322,11 @@ for newHost in listOfHosts:
                                 "dns":newHost["interface_dns"],
                                 "port":newHost["interface_port"]}],
                             "groups":[{"groupid":"5"}],
-                            "macros":newHostMacros
+                            "macros":newHostMacros,
+                            "templates":templateIDsToAdd
                             },
-                    "auth": token,"id":1}),verify=False).text))[0].value)
+                    "auth": token,"id":1}),verify=False).text))[0].value
+                    print("new JMX host '"+newHost["hostName"]+"', ",end='', flush=True)
                 except:
                     print("unable to create JMX host")
             else:
