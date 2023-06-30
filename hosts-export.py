@@ -75,7 +75,6 @@ csvHostList_writer = csv.writer(hostListCSV)
 macroListCSV = open(csv_export_dir+'/macros.csv', 'w', newline='')
 csvMacroList_writer = csv.writer(macroListCSV)
 
-
 # pick up token which will be used latter in script
 payload = json.dumps({"jsonrpc":"2.0","method":"user.login","params":{"user":user,"password":password},"id":1})
 headers = {'Content-Type': 'application/json'}
@@ -155,85 +154,85 @@ listOfInterfaces = parse('$.result').find(json.loads(requests.request("POST", ur
 
 # rename elements in JSON tree to not conflict while mapping with other result
 for interface in listOfInterfaces:
-  interface["interface_dns"] = interface.pop("dns")
-  interface["interface_ip"] = interface.pop("ip")
-  interface["interface_details"] = interface.pop("details")
-  interface["interface_type"] = interface.pop("type")
-  interface["interface_port"] = interface.pop("port")
+    interface["interface_dns"] = interface.pop("dns")
+    interface["interface_ip"] = interface.pop("ip")
+    interface["interface_details"] = interface.pop("details")
+    interface["interface_type"] = interface.pop("type")
+    interface["interface_port"] = interface.pop("port")
   
-  # per SNMPv2/SNMPv3 the amount of columns differ, let's have them all in output
-  if len(interface["interface_details"])>0:
-      try:
-          interface["community"] = interface["interface_details"]['community']
-      except:
-          interface["community"] = ""
+    # per SNMPv2/SNMPv3 the amount of columns differ, let's have them all in output
+    if len(interface["interface_details"])>0:
+        try:
+            interface["community"] = interface["interface_details"]['community']
+        except:
+            interface["community"] = ""
+        
+        try:
+            interface["authpassphrase"] = interface["interface_details"]['authpassphrase']
+        except:
+            interface["authpassphrase"] = ""
 
-      try:
-          interface["authpassphrase"] = interface["interface_details"]['authpassphrase']
-      except:
-          interface["authpassphrase"] = ""
-          
-      try:
-          interface["authprotocol"] = interface["interface_details"]['authprotocol']
-      except:
-          interface["authprotocol"] = ""
+        try:
+            interface["authprotocol"] = interface["interface_details"]['authprotocol']
+        except:
+            interface["authprotocol"] = ""
 
-      try:
-          interface["bulk"] = interface["interface_details"]['bulk']
-      except:
-           interface["bulk"] = ""
+        try:
+            interface["bulk"] = interface["interface_details"]['bulk']
+        except:
+            interface["bulk"] = ""
 
-      try:
-          interface["contextname"] = interface["interface_details"]['contextname']
-      except:
-          interface["contextname"] = ""
+        try:
+            interface["contextname"] = interface["interface_details"]['contextname']
+        except:
+            interface["contextname"] = ""
 
-      try:
-          interface["privpassphrase"] = interface["interface_details"]['privpassphrase']
-      except:
-          interface["privpassphrase"] = ""
+        try:
+            interface["privpassphrase"] = interface["interface_details"]['privpassphrase']
+        except:
+            interface["privpassphrase"] = ""
 
-      try:
-          interface["privprotocol"] = interface["interface_details"]['privprotocol']
-      except:
-          interface["privprotocol"] = ""
+        try:
+            interface["privprotocol"] = interface["interface_details"]['privprotocol']
+        except:
+            interface["privprotocol"] = ""
 
-      try:
-          interface["securitylevel"] = interface["interface_details"]['securitylevel']
-      except:
-          interface["securitylevel"] = ""
+        try:
+            interface["securitylevel"] = interface["interface_details"]['securitylevel']
+        except:
+            interface["securitylevel"] = ""
 
-      try:
-          interface["securityname"] = interface["interface_details"]['securityname']
-      except:
-          interface["securityname"] = ""
+        try:
+            interface["securityname"] = interface["interface_details"]['securityname']
+        except:
+            interface["securityname"] = ""
 
-      try:
-          interface["version"] = interface["interface_details"]['version']
-      except:
-          interface["version"] = ""
+        try:
+            interface["version"] = interface["interface_details"]['version']
+        except:
+            interface["version"] = ""
 
-      #destroy original entity
-      interface.pop("interface_details")
-  else:
-      interface["community"] = ""
-      interface["authpassphrase"] = ""
-      interface["authprotocol"] = ""
-      interface["bulk"] = ""
-      interface["contextname"] = ""
-      interface["privpassphrase"] = ""
-      interface["privprotocol"] = ""
-      interface["securitylevel"] = ""
-      interface["securityname"] = ""
-      interface["version"] = ""
+        #destroy original entity
+        interface.pop("interface_details")
+    else:
+        interface["community"] = ""
+        interface["authpassphrase"] = ""
+        interface["authprotocol"] = ""
+        interface["bulk"] = ""
+        interface["contextname"] = ""
+        interface["privpassphrase"] = ""
+        interface["privprotocol"] = ""
+        interface["securitylevel"] = ""
+        interface["securityname"] = ""
+        interface["version"] = ""
 
-      # destroy original entity
-      interface.pop("interface_details")
-
+        # destroy original entity
+        interface.pop("interface_details")
 
 # manually go through host list and add the columns which reflect interface details
 for host in listOfHosts:
     interfaceExists = 0
+    host.pop("groups")
     # iterate through interface
     for interface in listOfInterfaces:
 
@@ -272,44 +271,23 @@ for host in listOfHosts:
         host["interface_type"] = ""
         host["interface_port"] = ""
 
+# host list are prepared here
+
 # if no argument of host group was specified
+finalList = []
 if not opts.group:
-
-    # write host list to a file
-    count = 0
-    for data in listOfHosts:
-        if count == 0:
-            header = data.keys()
-            csvHostList_writer.writerow(header)
-            count += 1
-        csvHostList_writer.writerow(data.values())
-
-    # write macro list to a file
-    count = 0
-    for data in hostMacroWithHostName:
-            if count == 0:
-                header = data.keys()
-                csvMacroList_writer.writerow(header)
-                count += 1
-            csvMacroList_writer.writerow(data.values())
-
-    # close file for writing
-    hostListCSV.close()
-    macroListCSV.close()
+    finalList = listOfHosts
 
 else:
     selectedHostGroupExists=0
     for selectedHostGroup in listOfHostGroups:
         if selectedHostGroup["name"] == opts.group:
-            print("'"+opts.group+"' found")
             selectedHostGroupExists=1
             if len(selectedHostGroup["hosts"])>0:
-                newLimitedList = []
                 for selectedHost in selectedHostGroup["hosts"]:
                     for host in listOfHosts:
                         if host["hostid"] == selectedHost["hostid"]:
-                            #print(host["hostName"])
-                            newLimitedList.append(host)
+                            finalList.append(host)
             else:
                 print("host group is empty")
             break
@@ -317,6 +295,24 @@ else:
     if not selectedHostGroupExists:
         print("'"+opts.group+"' host group does not exist")
 
-    #pprint(newLimitedList)
+# write host list to a file
+count = 0
+for data in finalList:
+    if count == 0:
+        header = data.keys()
+        csvHostList_writer.writerow(header)
+        count += 1
+    csvHostList_writer.writerow(data.values())
 
+# write macro list to a file
+count = 0
+for data in hostMacroWithHostName:
+        if count == 0:
+            header = data.keys()
+            csvMacroList_writer.writerow(header)
+            count += 1
+        csvMacroList_writer.writerow(data.values())
 
+# close file for writing
+hostListCSV.close()
+macroListCSV.close()
