@@ -148,86 +148,91 @@ for macro in listOfHostMacros:
 listOfInterfaces = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
     "method": "hostinterface.get",
     "params": {
-        "output": ["hostid","ip","dns","type","details","port"],
-        "filter": {"main":1}},
+        "output": ["hostid","ip","dns","type","details","port","main"]},
 "auth": token,"id": 1}), verify=False).text))[0].value
 
 # rename elements in JSON tree to not conflict while mapping with other result
 for interface in listOfInterfaces:
-    interface["interface_dns"] = interface.pop("dns")
-    interface["interface_ip"] = interface.pop("ip")
-    interface["interface_details"] = interface.pop("details")
-    interface["interface_type"] = interface.pop("type")
-    interface["interface_port"] = interface.pop("port")
-  
-    # per SNMPv2/SNMPv3 the amount of columns differ, let's have them all in output
-    if len(interface["interface_details"])>0:
-        try:
-            interface["community"] = interface["interface_details"]['community']
-        except:
+
+    # aggregate all interface addresses in one place
+
+    # treat main interface in priority
+    if interface["main"] == '1':
+
+        interface["interface_dns"] = interface.pop("dns")
+        interface["interface_ip"] = interface.pop("ip")
+        interface["interface_details"] = interface.pop("details")
+        interface["interface_type"] = interface.pop("type")
+        interface["interface_port"] = interface.pop("port")
+      
+        # per SNMPv2/SNMPv3 the amount of columns differ, let's have them all in output
+        if len(interface["interface_details"])>0:
+            try:
+                interface["community"] = interface["interface_details"]['community']
+            except:
+                interface["community"] = ""
+            
+            try:
+                interface["authpassphrase"] = interface["interface_details"]['authpassphrase']
+            except:
+                interface["authpassphrase"] = ""
+
+            try:
+                interface["authprotocol"] = interface["interface_details"]['authprotocol']
+            except:
+                interface["authprotocol"] = ""
+
+            try:
+                interface["bulk"] = interface["interface_details"]['bulk']
+            except:
+                interface["bulk"] = ""
+
+            try:
+                interface["contextname"] = interface["interface_details"]['contextname']
+            except:
+                interface["contextname"] = ""
+
+            try:
+                interface["privpassphrase"] = interface["interface_details"]['privpassphrase']
+            except:
+                interface["privpassphrase"] = ""
+
+            try:
+                interface["privprotocol"] = interface["interface_details"]['privprotocol']
+            except:
+                interface["privprotocol"] = ""
+
+            try:
+                interface["securitylevel"] = interface["interface_details"]['securitylevel']
+            except:
+                interface["securitylevel"] = ""
+
+            try:
+                interface["securityname"] = interface["interface_details"]['securityname']
+            except:
+                interface["securityname"] = ""
+
+            try:
+                interface["version"] = interface["interface_details"]['version']
+            except:
+                interface["version"] = ""
+
+            #destroy original entity
+            interface.pop("interface_details")
+        else:
             interface["community"] = ""
-        
-        try:
-            interface["authpassphrase"] = interface["interface_details"]['authpassphrase']
-        except:
             interface["authpassphrase"] = ""
-
-        try:
-            interface["authprotocol"] = interface["interface_details"]['authprotocol']
-        except:
             interface["authprotocol"] = ""
-
-        try:
-            interface["bulk"] = interface["interface_details"]['bulk']
-        except:
             interface["bulk"] = ""
-
-        try:
-            interface["contextname"] = interface["interface_details"]['contextname']
-        except:
             interface["contextname"] = ""
-
-        try:
-            interface["privpassphrase"] = interface["interface_details"]['privpassphrase']
-        except:
             interface["privpassphrase"] = ""
-
-        try:
-            interface["privprotocol"] = interface["interface_details"]['privprotocol']
-        except:
             interface["privprotocol"] = ""
-
-        try:
-            interface["securitylevel"] = interface["interface_details"]['securitylevel']
-        except:
             interface["securitylevel"] = ""
-
-        try:
-            interface["securityname"] = interface["interface_details"]['securityname']
-        except:
             interface["securityname"] = ""
-
-        try:
-            interface["version"] = interface["interface_details"]['version']
-        except:
             interface["version"] = ""
 
-        #destroy original entity
-        interface.pop("interface_details")
-    else:
-        interface["community"] = ""
-        interface["authpassphrase"] = ""
-        interface["authprotocol"] = ""
-        interface["bulk"] = ""
-        interface["contextname"] = ""
-        interface["privpassphrase"] = ""
-        interface["privprotocol"] = ""
-        interface["securitylevel"] = ""
-        interface["securityname"] = ""
-        interface["version"] = ""
-
-        # destroy original entity
-        interface.pop("interface_details")
+            # destroy original entity
+            interface.pop("interface_details")
 
 # manually go through host list and add the columns which reflect interface details
 for host in listOfHosts:
