@@ -9,6 +9,23 @@ import sys
 sys.path.insert(0,'/var/lib/zabbix')
 import config
 
+# to support arguments
+import optparse
+
+parser=optparse.OptionParser()
+
+# import options
+
+parser.add_option('-t','--templategroup',help='give a host group')
+parser.add_option('-l','--limit',help='limit the call',type=int)
+
+(opts,args) = parser.parse_args() # instantiate parser
+
+if opts.limit:
+    limit=opts.limit
+else:
+    limit=99999
+
 # to automatically make directories via python
 import os
 
@@ -64,9 +81,9 @@ listOfTemplates = parse('$.result').find(json.loads(requests.request("POST", url
     "jsonrpc": "2.0",
     "method": "template.get",
     "params": {
-#        "templateids": ["11999","13728","13641"],
         "output": ["host","templateid"],
-        "selectGroups": "query"
+        "selectGroups": "query",
+        "limit": limit
     },
     "auth": token,
     "id": 1
@@ -77,11 +94,14 @@ ListOfGroups = parse('$.result').find(json.loads(requests.request("POST", url, h
         "jsonrpc": "2.0",
     "method": "hostgroup.get",
     "params": {
-        "output": ["groupid","name"]
+        "output": ["groupid","name","templates"],
+        "selectTemplates":"query"
         },
     "auth": token,
     "id": 1
 }), verify=False).text))[0].value
+
+
 
 print("total amount of templates to export:",len(listOfTemplates))
 
@@ -89,11 +109,9 @@ for item in listOfTemplates:
   item["TemplateName"] = item.pop("host")
   item["TemplateGroups"] = item.pop("groups")
 
-  # go through every object name an execite additional configuration/template export function
+  # go through every object name an execute additional configuration/template export function
   print(item["templateid"]+' ',end='', flush=True)
 
-  # map template groups with name
-  
   # put template XML content in variable
   xmlTemplate = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
    "jsonrpc": "2.0",
@@ -112,7 +130,6 @@ for item in listOfTemplates:
           # look up the mapping
           if templateGroup["groupid"]==globalGroup["groupid"]:
 
-              # mapping has been found
               # calculate the destionation directory based on template group name
               path = os.path.join(templateExportDir,globalGroup["name"])
               # make sure directory exists
