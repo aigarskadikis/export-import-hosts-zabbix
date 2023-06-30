@@ -99,11 +99,10 @@ for newHost in listOfHosts:
             break
 
     if hostExists:
-        print(bcolors.OKGREEN + "'" + newHost["hostName"] + "' already exists in destination"+ bcolors.ENDC)
-        already=1
+        print(bcolors.OKGREEN + "'" + newHost["hostName"] + "', "+ bcolors.ENDC,end='', flush=True)
     else:
         # need to register new host
-        print(bcolors.WARNING + "host '"+newHost["hostName"] + "' is not yet registred. will register it now"+bcolors.ENDC)
+        #print(bcolors.WARNING + "host '"+newHost["hostName"] + "' is not yet registred. will register it now"+bcolors.ENDC)
 
         # define new list of macros which is about to be installed on this host
         newHostMacros = []
@@ -123,9 +122,8 @@ for newHost in listOfHosts:
                 newHostMacros.append(row)
 
         # pick up template bundle
-        #print("characters: ",len(newHost["templateBundle"]))
         templatesToAdd = newHost["templateBundle"].split(';')
-        print("template names which needs to be attached to this host:",templatesToAdd)
+        #print("template names which needs to be attached to this host:",templatesToAdd)
 
         # keep in track tmeplate IDs to add
         templateIDsToAdd = []
@@ -155,7 +153,7 @@ for newHost in listOfHosts:
                     templateIDsToAdd.append(row)
                     
                 else:
-                    print("template '"+oneOfTemplatesToAdd+"' not found. will import it now by using '"+ locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+".xml'")
+                    #print("template '"+oneOfTemplatesToAdd+"' not found. will import it now by using '"+ locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+".xml'")
 
                     # check in file system if such template object exists
                     try:
@@ -216,7 +214,7 @@ for newHost in listOfHosts:
 
 
                     except:
-                        print("cannot find file in file system or API call fails. or maybe template is using special characters")
+                        print(bcolors.FAIL +"import template '"+ oneOfTemplatesToAdd  + "' failed. try manually importing '"+ locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+".xml', and rerun script. cannot register host '"+newHost["hostName"]+"', "+ bcolors.ENDC,end='', flush=True)
                         allTemplatesExist=0
 
         if allTemplatesExist == 1:
@@ -244,7 +242,7 @@ for newHost in listOfHosts:
 
                 
             elif newHost["interface_type"]=='2':
-                print("new host is SNMP")
+                #print("new host is SNMP")
                 # this is SNMP host. Need to check version
 
                 if newHost["version"]=='2':
@@ -330,9 +328,10 @@ for newHost in listOfHosts:
             else:
                 print("this is not ZBX, not SNMP, not JMX host")
         else:
-            print("not all templates are ready. skipping regitration per '",newHost["hostName"],"', enable 'print(uploadTemplatePayload)' and simulate JSON via Postman")
-            print()
-
+            #print("not all templates are ready. skipping regitration per '",newHost["hostName"],"', enable 'print(uploadTemplatePayload)' and simulate JSON via Postman")
+            #print()
+            a=1
+print()
 listOfHostsCSV.close()
 listOfHostMacrosCSV.close()
 
