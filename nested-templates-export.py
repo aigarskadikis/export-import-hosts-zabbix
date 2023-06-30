@@ -52,18 +52,24 @@ token = parse('$.result').find(json.loads(response.text))[0].value
 
 
 # listing all hosts and attached master templates
-listOfHostsHavingTemplates = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
-    "jsonrpc": "2.0",
-    "method": "host.get",
-    "params": {
-        "output": ["parentTemplates","host","hostid"],
-        "selectParentTemplates": "query"
+listOfHostsHavingTemplates = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
+"method":"host.get",
+"params":{
+    "output":["parentTemplates","host","hostid"],
+    "selectParentTemplates":"query",
+    "limit":"3"
     },
-    "auth": token,
-    "id": 1
-    }), verify=False).text))[0].value
+"auth":token,"id": 1}), verify=False).text))[0].value
 
-#pprint(listOfHostsHavingTemplates)
+# mapping between templateid and template name
+templateMappingBetweenIdAndName = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
+"method":"template.get",
+"params":{
+    "output":["templateid","host"]
+    },
+"auth":token,"id":1}), verify=False).text))[0].value
+
+print(templateMappingBetweenIdAndName)
 
 # iterate through hosts
 for host in listOfHostsHavingTemplates:
@@ -86,10 +92,15 @@ for host in listOfHostsHavingTemplates:
             # analyze the rest of templates
             print("there is a todo list to go through")
             while len(todo)>0:
-                dependencies = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
-                    "jsonrpc": "2.0","method": "template.get","params": {
-				"templateids": todo[0],	"output": ["host","parentTemplates"],"selectParentTemplates":"query" }, "auth": token,  "id": 1
-    }), verify=False).text))[0].value
+                dependencies = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
+                    "method":"template.get",
+                    "params":{
+                        "templateids":todo[0],
+                        "output":["host","parentTemplates"],
+                        "selectParentTemplates":"query"
+                        },
+                "auth":token,"id":1}), verify=False).text))[0].value
+
                 todo.remove(todo[0])
 
                 for p in dependencies:
@@ -97,7 +108,16 @@ for host in listOfHostsHavingTemplates:
                         for n in p["parentTemplates"]:
                             todo.append(n["templateid"])
                             templatesToExport.append(n["templateid"])
-            print("total amount of templates to export per '"+templateid["templateid"]+"' is: ")
+
+            # get template name of master
+            for name in templateMappingBetweenIdAndName:
+                if name["templateid"]==templateid["templateid"]:
+                    nameOfMaster = name["host"]
+                    break
+
+
+            #print("total amount of templates to export per '"+templateid["templateid"]+"' is: ")
+            print("total amount of templates to export per '"+nameOfMaster+"' is: ")
             print(templatesToExport)
 
             # export template bundle
