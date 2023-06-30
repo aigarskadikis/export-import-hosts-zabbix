@@ -123,6 +123,7 @@ for newHost in listOfHosts:
                 newHostMacros.append(row)
 
         # pick up template bundle
+        #print("characters: ",len(newHost["templateBundle"]))
         templatesToAdd = newHost["templateBundle"].split(';')
         print("template names which needs to be attached to this host:",templatesToAdd)
 
@@ -130,9 +131,14 @@ for newHost in listOfHosts:
         templateIDsToAdd = []
 
         # if template list is not empty
-        if len(templatesToAdd)>0:
-            print("analyze templates which needs to be linked to new host")
+        if (len(newHost["templateBundle"]) > 0 and len(templatesToAdd) > 0):
+            #print("analyze templates which needs to be linked to new host")
             # analyze what is inside
+
+
+            # set flag to measyre if all dependencies for host is completed
+            allTemplatesExist=1
+
             for oneOfTemplatesToAdd in templatesToAdd:
                 # lets assume this template does not exist in destination
                 templateIdInDestination = 0
@@ -141,7 +147,6 @@ for newHost in listOfHosts:
                     if existingTemplate["host"] == oneOfTemplatesToAdd:
                         templateIdInDestination = existingTemplate["templateid"]
                 
-                print(templateIdInDestination)
                 # if api reported a non-empty output, the template ID exists.
                 if not templateIdInDestination == 0:
                     # add template to list which be attached to host object
@@ -150,29 +155,39 @@ for newHost in listOfHosts:
                     templateIDsToAdd.append(row)
                     
                 else:
-                    print("template '"+oneOfTemplatesToAdd+"' not found. will import it now..")
+                    print("template '"+oneOfTemplatesToAdd+"' not found. will import it now by using '"+ locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+".xml'")
 
                     # check in file system if such template object exists
                     try:
                         with open(locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+'.xml', 'r') as file:
                             templateXMLtoImport = file.read().replace('\n', '')
 
-                            payload=json.dumps({"jsonrpc":"2.0",
+                            uploadTemplatePayload=json.dumps({"jsonrpc":"2.0",
                                 "method":"configuration.import",
                                 "params":{
                                     "format":"xml",
                                     "rules":{
                                         "groups":{"createMissing":True,"updateExisting":True},
                                         "templates":{"createMissing":True,"updateExisting":True},
+                                        "valueMaps":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                        "templateDashboards":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                        "templateLinkage":{"createMissing":True,"deleteMissing":False},
                                         "items":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                        "discoveryRules":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
                                         "triggers":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
-                                        "valueMaps":{"createMissing":True,"updateExisting":True}
+                                        "graphs":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                        "httptests":{"createMissing":True,"updateExisting":True,"deleteMissing":True}
                                         },
                                     "source": templateXMLtoImport},
                                 "auth":token,"id":1})
-                            print(parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=payload,verify=False).text))[0].value)
+
+                            # this is to troubleshoot if API call does not work
+                            #print(uploadTemplatePayload)
+                            outputOfUpload = parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=uploadTemplatePayload,verify=False).text))[0].value
+#                            print(outputOfUpload)
 
                             # do a follow up and check if template exists, pick up tamplate ID
+                            #sleep(1000)
                             newTemplateID = parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=json.dumps({"jsonrpc":"2.0",
                                 "method":"template.get",
                                 "params":{
@@ -181,7 +196,6 @@ for newHost in listOfHosts:
                                     "searchWildcardsEnabled":1
                                     },
 "auth":token,"id":1}),verify=False).text))[0].value
-                            print(newTemplateID)
 
                             try:
                                 # add new template name to virtual list
@@ -202,120 +216,122 @@ for newHost in listOfHosts:
 
 
                     except:
-                        print("cannot find file in file system or API call fails")
+                        print("cannot find file in file system or API call fails. or maybe template is using special characters")
+                        allTemplatesExist=0
 
-
-        # check if this is ZBX host
-        pprint(templateIDsToAdd)
-        if newHost["interface_type"]=='1':
-            try:
-                # create a Zabbix agent host
-                print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
-                    "method":"host.create",
-                    "params":{
-                        "host":newHost["hostName"],
-                        "interfaces":[{
-                            "type":1,
-                            "main":1,
-                            "useip":1,
-                            "ip":newHost["interface_ip"],
-                            "dns":newHost["interface_dns"],
-                            "port":newHost["interface_port"]}],
-                        "groups":[{"groupid":"5"}],
-                        "macros":newHostMacros,
-                        "templates":templateIDsToAdd
-                        },
-                "auth": token,"id":1}),verify=False).text))[0].value)
-            except:
-                print("unable to create ZBX host")
-
-            
-        elif newHost["interface_type"]=='2':
-            print("new host is SNMP")
-            # this is SNMP host. Need to check version
-
-            if newHost["version"]=='2':
-                # this is SNMPv2 host
+        if allTemplatesExist == 1:
+            if newHost["interface_type"]=='1':
                 try:
-                    # create a SNMPv3 host. SNMPv3 host has 9 characteristics
-                    print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+                    # create a Zabbix agent host
+                    print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
                         "method":"host.create",
                         "params":{
-                            "host":newHost["hostName"],"interfaces":[{
-                                "type":2,
+                            "host":newHost["hostName"],
+                            "interfaces":[{
+                                "type":1,
                                 "main":1,
                                 "useip":1,
                                 "ip":newHost["interface_ip"],
                                 "dns":newHost["interface_dns"],
-                                "port":newHost["interface_port"],
-                                "details":{
-                                    "community":newHost["community"],
-                                    "bulk":newHost["bulk"],
-                                    "version":newHost["version"]}}],
+                                "port":newHost["interface_port"]}],
                             "groups":[{"groupid":"5"}],
-                            "macros":newHostMacros},
-                    "auth": token,"id": 1}), verify=False).text))[0].value)
-                    existingHostsList.append(newHost["hostName"])
+                            "macros":newHostMacros,
+                            "templates":templateIDsToAdd
+                            },
+                    "auth": token,"id":1}),verify=False).text))[0].value)
                 except:
-                    print("unable to create SNMPv2 host")
+                    print("unable to create ZBX host")
 
-            elif newHost["version"]=='3':
-                # this is SNMPv3 host
+                
+            elif newHost["interface_type"]=='2':
+                print("new host is SNMP")
+                # this is SNMP host. Need to check version
+
+                if newHost["version"]=='2':
+                    # this is SNMPv2 host
+                    try:
+                        # create a SNMPv3 host. SNMPv3 host has 9 characteristics
+                        print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+                            "method":"host.create",
+                            "params":{
+                                "host":newHost["hostName"],"interfaces":[{
+                                    "type":2,
+                                    "main":1,
+                                    "useip":1,
+                                    "ip":newHost["interface_ip"],
+                                    "dns":newHost["interface_dns"],
+                                    "port":newHost["interface_port"],
+                                    "details":{
+                                        "community":newHost["community"],
+                                        "bulk":newHost["bulk"],
+                                        "version":newHost["version"]}}],
+                                "groups":[{"groupid":"5"}],
+                                "macros":newHostMacros},
+                        "auth": token,"id": 1}), verify=False).text))[0].value)
+                        existingHostsList.append(newHost["hostName"])
+                    except:
+                        print("unable to create SNMPv2 host")
+
+                elif newHost["version"]=='3':
+                    # this is SNMPv3 host
+                    try:
+                        # create a SNMPv3 host. SNMPv3 host has 9 characteristics
+                        print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+                            "method":"host.create",
+                            "params":{
+                                "host":newHost["hostName"],"interfaces":[{
+                                    "type":2,
+                                    "main":1,
+                                    "useip":1,
+                                    "ip":newHost["interface_ip"],
+                                    "dns":newHost["interface_dns"],
+                                    "port":newHost["interface_port"],
+                                    "details":{
+                                        "version":newHost["version"],
+                                        "bulk":newHost["bulk"],
+                                        "securityname":newHost["securityname"],
+                                        "contextname":newHost["contextname"],
+                                        "securitylevel":newHost["securitylevel"],
+                                        "authpassphrase":newHost["authpassphrase"],
+                                        "authprotocol":newHost["authprotocol"],
+                                        "privpassphrase":newHost["privpassphrase"],
+                                        "privprotocol":newHost["privprotocol"]}}],
+                                    "groups":[{"groupid":"5"}],
+                                    "macros":newHostMacros
+                                    },
+                        "auth":token,"id":1}),verify=False).text))[0].value)
+                        existingHostsList.append(newHost["hostName"])
+                    except:
+                        print("unable to create SNMPv3 host")
+                else:
+                    unknownSNMPversion=1
+
+            # check if this is ZBX host
+            elif newHost["interface_type"]=='4':
                 try:
-                    # create a SNMPv3 host. SNMPv3 host has 9 characteristics
-                    print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+                    # create a Zabbix agent host
+                    print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
                         "method":"host.create",
                         "params":{
-                            "host":newHost["hostName"],"interfaces":[{
-                                "type":2,
+                            "host":newHost["hostName"],
+                            "interfaces":[{
+                                "type":4,
                                 "main":1,
                                 "useip":1,
                                 "ip":newHost["interface_ip"],
                                 "dns":newHost["interface_dns"],
-                                "port":newHost["interface_port"],
-                                "details":{
-                                    "version":newHost["version"],
-                                    "bulk":newHost["bulk"],
-                                    "securityname":newHost["securityname"],
-                                    "contextname":newHost["contextname"],
-                                    "securitylevel":newHost["securitylevel"],
-                                    "authpassphrase":newHost["authpassphrase"],
-                                    "authprotocol":newHost["authprotocol"],
-                                    "privpassphrase":newHost["privpassphrase"],
-                                    "privprotocol":newHost["privprotocol"]}}],
-                                "groups":[{"groupid":"5"}],
-                                "macros":newHostMacros
-                                },
-                    "auth":token,"id":1}),verify=False).text))[0].value)
-                    existingHostsList.append(newHost["hostName"])
+                                "port":newHost["interface_port"]}],
+                            "groups":[{"groupid":"5"}],
+                            "macros":newHostMacros
+                            },
+                    "auth": token,"id":1}),verify=False).text))[0].value)
                 except:
-                    print("unable to create SNMPv3 host")
+                    print("unable to create JMX host")
             else:
-                unknownSNMPversion=1
-
-        # check if this is ZBX host
-        elif newHost["interface_type"]=='4':
-            try:
-                # create a Zabbix agent host
-                print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
-                    "method":"host.create",
-                    "params":{
-                        "host":newHost["hostName"],
-                        "interfaces":[{
-                            "type":4,
-                            "main":1,
-                            "useip":1,
-                            "ip":newHost["interface_ip"],
-                            "dns":newHost["interface_dns"],
-                            "port":newHost["interface_port"]}],
-                        "groups":[{"groupid":"5"}],
-                        "macros":newHostMacros
-                        },
-                "auth": token,"id":1}),verify=False).text))[0].value)
-            except:
-                print("unable to create JMX host")
+                print("this is not ZBX, not SNMP, not JMX host")
         else:
-            print("this is not ZBX, not SNMP, not JMX host")
+            print("not all templates are ready. skipping regitration per '",newHost["hostName"],"', enable 'print(uploadTemplatePayload)' and simulate JSON via Postman")
+            print()
 
 listOfHostsCSV.close()
 listOfHostMacrosCSV.close()
