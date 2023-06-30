@@ -142,20 +142,18 @@ else:
     print("total amount of templates to export:",len(listOfTemplates))
 
     # transform naming of listOfTemplates
-    for item in listOfTemplates:
-        item["TemplateName"] = item.pop("host")
-        item["TemplateGroups"] = item.pop("groups")
+    for template in listOfTemplates:
 
         # go through every object name an execute additional configuration/template export function
-        print(item["templateid"]+' ',end='', flush=True)
+        print(template["templateid"]+' ',end='', flush=True)
         
         # put template XML content in variable
         xmlTemplate = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
-            "method":"configuration.export","params": { "options": { "templates": [ item["templateid"] ] },"format": "xml" },
+            "method":"configuration.export","params": { "options": { "templates": [ template["templateid"] ] },"format": "xml" },
             "auth": token,"id": 1}), verify=False).text))[0].value
         
         # if template belongs to multiple template groups then create multiple directories
-        for templateGroup in item["TemplateGroups"]:
+        for templateGroup in template["groups"]:
             # take template group id and find the template group name
             for globalGroup in ListOfGroups:
                 # look up the mapping
@@ -168,14 +166,14 @@ else:
                     except:
                         cannotMakeDir = 1
                     # open file for writing
-                    f = open(  templateExportDir + '/' + globalGroup["name"] + '/' +item["TemplateName"]+'.xml', "w")
+                    f = open(  templateExportDir + '/' + globalGroup["name"] + '/' +template["host"]+'.xml', "w")
                     # write XML tempate content in file
                     f.write(xmlTemplate)
                     # close file
                     f.close()
         
         # there will be one single directory too to have all template objects in one place
-        f = open(  templateExportDir + '/all/' + item["TemplateName"]+'.xml', "w")
+        f = open(  templateExportDir + '/all/' + template["host"]+'.xml', "w")
         f.write(xmlTemplate)
         f.close()
 
