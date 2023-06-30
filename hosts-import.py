@@ -103,7 +103,7 @@ for newHost in listOfHosts:
         already=1
     else:
         # need to register new host
-        print(bcolors.FAIL + "host '"+newHost["hostName"] + "' is not yet registred. will register it now:")
+        print(bcolors.WARNING + "host '"+newHost["hostName"] + "' is not yet registred. will register it now"+bcolors.ENDC)
 
         # define new list of macros which is about to be installed on this host
         newHostMacros = []
