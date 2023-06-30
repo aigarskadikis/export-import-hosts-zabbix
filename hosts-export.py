@@ -76,7 +76,6 @@ macroListCSV = open(csv_export_dir+'/macros.csv', 'w', newline='')
 csvMacroList_writer = csv.writer(macroListCSV)
 
 
-
 # pick up token which will be used latter in script
 payload = json.dumps({"jsonrpc":"2.0","method":"user.login","params":{"user":user,"password":password},"id":1})
 headers = {'Content-Type': 'application/json'}
@@ -103,6 +102,7 @@ listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, he
     "auth": token,
     "id": 1
 }), verify=False).text))[0].value
+
 
 listOfHostMacros = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
     "jsonrpc": "2.0",
@@ -292,30 +292,33 @@ for host in listOfHosts:
         host["interface_type"] = ""
         host["interface_port"] = ""
 
-#pprint(listOfHostMacros)
+# if no argument of host group was specified
+if not opts.group:
 
-# write host list to a file
-count = 0
-for data in listOfHosts:
-    if count == 0:
-        header = data.keys()
-        csvHostList_writer.writerow(header)
-        count += 1
-    csvHostList_writer.writerow(data.values())
-
-#pprint(listOfHostMacros)
-
-# write macro list to a file
-count = 0
-for data in hostMacroWithHostName:
+    # write host list to a file
+    count = 0
+    for data in listOfHosts:
         if count == 0:
             header = data.keys()
-            csvMacroList_writer.writerow(header)
+            csvHostList_writer.writerow(header)
             count += 1
-        csvMacroList_writer.writerow(data.values())
-        #csvMacroList_writer.writerow(header)
-        #print(data.values())
+        csvHostList_writer.writerow(data.values())
 
-# close file for writing
-hostListCSV.close()
-macroListCSV.close()
+    # write macro list to a file
+    count = 0
+    for data in hostMacroWithHostName:
+            if count == 0:
+                header = data.keys()
+                csvMacroList_writer.writerow(header)
+                count += 1
+            csvMacroList_writer.writerow(data.values())
+
+    # close file for writing
+    hostListCSV.close()
+    macroListCSV.close()
+
+else:
+    nameOfCustomHostGroup = opts.group
+
+
+
