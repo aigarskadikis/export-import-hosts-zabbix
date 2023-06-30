@@ -16,11 +16,12 @@ parser=optparse.OptionParser()
 
 # import options
 
-parser.add_option('-t','--templategroup',help='give a host group')
+parser.add_option('-g','--templategroup',help='give a host group')
 parser.add_option('-l','--limit',help='limit the call',type=int)
 
 (opts,args) = parser.parse_args() # instantiate parser
 
+# if limit was defined then override
 if opts.limit:
     limit=opts.limit
 else:
@@ -89,74 +90,75 @@ listOfTemplates = parse('$.result').find(json.loads(requests.request("POST", url
     "id": 1
 }), verify=False).text))[0].value
 
-# get all template groups. will be used later for mapping
+
 ListOfGroups = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
-        "jsonrpc": "2.0",
-    "method": "hostgroup.get",
-    "params": {
-        "output": ["groupid","name","templates"],
-        "selectTemplates":"query"
-        },
-    "auth": token,
-    "id": 1
-}), verify=False).text))[0].value
+             "jsonrpc": "2.0",
+             "method": "hostgroup.get",
+             "params": {
+                 "output": ["groupid","name","templates"],
+                 "selectTemplates":"query"},
+             "auth": token,"id": 1}), verify=False).text))[0].value
 
+if opts.templategroup:
+    for hg in ListOfGroups:
+        if hg["name"] == opts.templategroup:
+            if len(hg["templates"]) > 0:
+                for t in hg["templates"]:
+                     print("total amount of templates to export:",len(hg["templates"]))
 
+            else:
+                print("template group '"+hg["name"]+"' has been found but not templates inside")
 
+#else:
 print("total amount of templates to export:",len(listOfTemplates))
 
+# transform naming of listOfTemplates
 for item in listOfTemplates:
-  item["TemplateName"] = item.pop("host")
-  item["TemplateGroups"] = item.pop("groups")
+    item["TemplateName"] = item.pop("host")
+    item["TemplateGroups"] = item.pop("groups")
 
-  # go through every object name an execute additional configuration/template export function
-  print(item["templateid"]+' ',end='', flush=True)
-
-  # put template XML content in variable
-  xmlTemplate = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
-   "jsonrpc": "2.0",
-    "method": "configuration.export",
-    "params": { "options": { "templates": [ item["templateid"] ] },
-        "format": "xml"
-    },
-    "auth": token,
-    "id": 1
-          }), verify=False).text))[0].value
-
-  # if template belongs to multiple template groups then create multiple directories
-  for templateGroup in item["TemplateGroups"]:
-      # take template group id and find the template group name
-      for globalGroup in ListOfGroups:
-          # look up the mapping
-          if templateGroup["groupid"]==globalGroup["groupid"]:
-
-              # calculate the destionation directory based on template group name
-              path = os.path.join(templateExportDir,globalGroup["name"])
-              # make sure directory exists
-              try:
-                  os.makedirs(path)
-              except:
-                  cannotMakeDir = 1
-              
-              # open file for writing
-              f = open(  templateExportDir + '/' + globalGroup["name"] + '/' +item["TemplateName"]+'.xml', "w")
-              # write XML tempate content in file
-              f.write(xmlTemplate)
-              # close file
-              f.close()
-  
-  # there will be one single directory too to have all template objects in one place
-  f = open(  templateExportDir + '/all/' + item["TemplateName"]+'.xml', "w")
-  f.write(xmlTemplate)
-  f.close()
-
-
+    # go through every object name an execute additional configuration/template export function
+    print(item["templateid"]+' ',end='', flush=True)
+    
+    # put template XML content in variable
+    xmlTemplate = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
+       "jsonrpc": "2.0",
+        "method": "configuration.export",
+        "params": { "options": { "templates": [ item["templateid"] ] },
+            "format": "xml"
+        },
+        "auth": token,"id": 1}), verify=False).text))[0].value
+    
+    # if template belongs to multiple template groups then create multiple directories
+    for templateGroup in item["TemplateGroups"]:
+        # take template group id and find the template group name
+        for globalGroup in ListOfGroups:
+            # look up the mapping
+            if templateGroup["groupid"]==globalGroup["groupid"]:
+                # calculate the destionation directory based on template group name
+                path = os.path.join(templateExportDir,globalGroup["name"])
+                # make sure directory exists
+                try:
+                    os.makedirs(path)
+                except:
+                    cannotMakeDir = 1
+                # open file for writing
+                f = open(  templateExportDir + '/' + globalGroup["name"] + '/' +item["TemplateName"]+'.xml', "w")
+                # write XML tempate content in file
+                f.write(xmlTemplate)
+                # close file
+                f.close()
+    
+    # there will be one single directory too to have all template objects in one place
+    f = open(  templateExportDir + '/all/' + item["TemplateName"]+'.xml', "w")
+    f.write(xmlTemplate)
+    f.close()
 
 print("")
 print("to explore outcome use commands:")
 print("tree",templateExportDir)
 print("find",templateExportDir,"-type f")
-# write host list to a file
+
 count = 0
 for data in listOfTemplates:
     if count == 0:
@@ -165,5 +167,5 @@ for data in listOfTemplates:
         count += 1
     csvTemplateList_writer.writerow(data.values())
 
-# close file for writing
+    # close file for writing
 templateListCSV.close()
