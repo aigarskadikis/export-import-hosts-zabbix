@@ -304,12 +304,19 @@ else:
             print("'"+opts.group+"' found")
             selectedHostGroupExists=1
             if len(selectedHostGroup["hosts"])>0:
-                print("host group contains hosts:",selectedHostGroup["hosts"])
+                newLimitedList = []
+                for selectedHost in selectedHostGroup["hosts"]:
+                    for host in listOfHosts:
+                        if host["hostid"] == selectedHost["hostid"]:
+                            #print(host["hostName"])
+                            newLimitedList.append(host)
             else:
                 print("host group is empty")
             break
 
     if not selectedHostGroupExists:
         print("'"+opts.group+"' host group does not exist")
+
+    #pprint(newLimitedList)
 
 
