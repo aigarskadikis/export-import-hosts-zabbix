@@ -1,4 +1,4 @@
-#!/bin/env python3.6
+#!/bin/env python3.9
 
 # cat /var/lib/zabbix/config.py
 # url = "http://127.0.0.1/api_jsonrpc.php"
@@ -16,6 +16,28 @@ import os
 # pip3.9 install requests
 import requests
 import json
+
+
+# to support arguments
+import optparse
+
+parser=optparse.OptionParser()
+
+# import options
+parser.add_option('-g','--group',help='give a host group')
+parser.add_option('-l','--limit',help='limit the call',type=int)
+
+(opts,args) = parser.parse_args() # instantiate parser
+
+# if limit was defined then override
+if opts.limit:
+    if not opts.group:
+        limit=opts.limit
+    else:
+        limit=99999
+else:
+    limit=99999
+
 
 # supress warnings in case of self signed certificate:
 # /usr/local/lib/python3.9/site-packages/urllib3/connectionpool.py:1095: InsecureRequestWarning: Unverified HTTPS request is being made to host 'zabbix.aigarskadikis.com'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
@@ -70,11 +92,12 @@ listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, he
     "jsonrpc": "2.0",
     "method": "host.get",
     "params": {
-        "output":["host","hostid","status","maintenance_status"],
+        "output":["host","hostid","status","maintenance_status","groups"],
         "selectItems": "count",
         "selectParentTemplates": ["host"],
         "selectTriggers": "count",
-        "selectMacros": "extend"
+        "selectMacros": "extend",
+        "selectGroups":"query"
         
     },
     "auth": token,
