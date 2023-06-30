@@ -102,6 +102,11 @@ listOfHostMacros = parse('$.result').find(json.loads(requests.request("POST", ur
         "output":"extend"},
     "auth": token,"id": 1}), verify=False).text))[0].value
 
+listOfHostGroups = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+    "method": "hostgroup.get",
+    "params": { "output": ["groupid","name","hosts"], "selectHosts":"query" },
+    "auth": token,"id": 1}), verify=False).text))[0].value
+
 # rename elements in JSON tree to not conflict while mapping with other result
 for host in listOfHosts:
     host["hostName"] = host.pop("host")
@@ -293,5 +298,14 @@ if not opts.group:
     macroListCSV.close()
 
 else:
-    nameOfCustomHostGroup = opts.group
+    selectedHostGroupExists=0
+    for selectedHostGroup in listOfHostGroups:
+        if selectedHostGroup["name"] == opts.group:
+            print("'"+opts.group+"' found")
+            selectedHostGroupExists=1
+            break
+
+    if not selectedHostGroupExists:
+        print("'"+opts.group+"' host group does not exist")
+
 
