@@ -143,9 +143,12 @@ for newHost in listOfHosts:
                 
                 print(templateIdInDestination)
                 # if api reported a non-empty output, the template ID exists.
-                if templateIdInDestination:
+                if not templateIdInDestination == 0:
                     # add template to list which be attached to host object
-                    templateIDsToAdd.append(templateIdInDestination)
+                    row = {}
+                    row["templateid"] = templateIdInDestination
+                    templateIDsToAdd.append(row)
+                    
                 else:
                     print("template '"+oneOfTemplatesToAdd+"' not found. will import it now..")
 
@@ -180,19 +183,30 @@ for newHost in listOfHosts:
 "auth":token,"id":1}),verify=False).text))[0].value
                             print(newTemplateID)
 
-                            templateIDsToAdd.append(newTemplateID[0]["templateid"])
+                            try:
+                                # add new template name to virtual list
+                                row = {}
+                                row["host"] = oneOfTemplatesToAdd
+                                row["templateid"] = newTemplateID[0]["templateid"]
+                                pprint(row)
+                                listOfExistingTemplates.append(row)
+                            except:
+                                print("cannot add variable to global templates list for destination")
 
-                            # add new template name to virtual list
-                            row = {}
-                            row["host"] = oneOfTemplatesToAdd
-                            row["templateid"] = newTemplateID
-                            listOfExistingTemplates.append(row)
+                            try:
+                                row = {}
+                                row["templateid"] = newTemplateID[0]["templateid"]
+                                templateIDsToAdd.append(row)
+                            except:
+                                print("cannot prepare template list payload for host.create function")
+
 
                     except:
                         print("cannot find file in file system or API call fails")
 
 
         # check if this is ZBX host
+        pprint(templateIDsToAdd)
         if newHost["interface_type"]=='1':
             try:
                 # create a Zabbix agent host
@@ -208,7 +222,8 @@ for newHost in listOfHosts:
                             "dns":newHost["interface_dns"],
                             "port":newHost["interface_port"]}],
                         "groups":[{"groupid":"5"}],
-                        "macros":newHostMacros
+                        "macros":newHostMacros,
+                        "templates":templateIDsToAdd
                         },
                 "auth": token,"id":1}),verify=False).text))[0].value)
             except:
