@@ -110,6 +110,21 @@ for newHost in listOfHosts:
         templatesToAdd = newHost["templateBundle"].split(';')
         pprint(templatesToAdd)
 
+        # validate if templates already exists
+        for checkIfTemplateExists in templatesToAdd:
+            result = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
+                "method": "template.get",
+                "params": {
+                    "output":["templateid"],
+                    "search":{"host": checkIfTemplateExists}
+                    },
+                "auth": token,"id": 1}), verify=False).text))[0].value
+            if len(result)>0:
+                print("'"+checkIfTemplateExists+"' template exists")
+            else:
+                print("not found template '"+checkIfTemplateExists+"'")
+
+
         # check if this is ZBX host
         if newHost["interface_type"]=='1':
             try:
@@ -123,7 +138,6 @@ for newHost in listOfHosts:
                         "macros": newHostMacros
                         },
                 "auth": token,"id": 1}), verify=False).text))[0].value)
-                existingHostsList.append(newHost["hostName"])
             except:
                 print("unable to create ZBX host")
 
