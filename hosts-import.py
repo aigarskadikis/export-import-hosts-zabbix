@@ -221,7 +221,7 @@ for newHost in listOfHosts:
             if newHost["interface_type"]=='1':
                 try:
                     # create a Zabbix agent host
-                    print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
+                    parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
                         "method":"host.create",
                         "params":{
                             "host":newHost["hostName"],
@@ -236,7 +236,8 @@ for newHost in listOfHosts:
                             "macros":newHostMacros,
                             "templates":templateIDsToAdd
                             },
-                    "auth": token,"id":1}),verify=False).text))[0].value)
+                    "auth": token,"id":1}),verify=False).text))[0].value
+                    print("'"+newHost["hostName"]+"', ")
                 except:
                     print("unable to create ZBX host")
 
