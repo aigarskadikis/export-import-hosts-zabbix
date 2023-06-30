@@ -49,15 +49,12 @@ response = requests.request("POST", url, headers=headers, data=payload, verify=F
 #print(response.text)
 token = parse('$.result').find(json.loads(response.text))[0].value
 
-
-
 # listing all hosts and attached master templates
 listOfHostsHavingTemplates = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
 "method":"host.get",
 "params":{
     "output":["parentTemplates","host","hostid"],
-    "selectParentTemplates":"query",
-    "limit":"3"
+    "selectParentTemplates":"query"
     },
 "auth":token,"id": 1}), verify=False).text))[0].value
 
@@ -69,7 +66,8 @@ templateMappingBetweenIdAndName = parse('$.result').find(json.loads(requests.req
     },
 "auth":token,"id":1}), verify=False).text))[0].value
 
-print(templateMappingBetweenIdAndName)
+# track the master template names which has been already done. This will save a lot of performance and API calls
+masterTemplatesCompletedIDs = []
 
 # iterate through hosts
 for host in listOfHostsHavingTemplates:
@@ -77,65 +75,67 @@ for host in listOfHostsHavingTemplates:
     if len(host["parentTemplates"])>0:
         # inform this host is having templates
         print(host["host"]+" is having",len(host["parentTemplates"]),"master templates")
-        pprint(host["parentTemplates"])
+        print(host["parentTemplates"])
         # go through parent templates one by one
         for templateid in host["parentTemplates"]:
-            # set an empty todo list
-            todo = []
-            # set an empty array
-            templatesToExport = []
-            # add parrent to archive
-            templatesToExport.append(templateid["templateid"])
-            # add parrent to todo list for analisis
-            todo.append(templateid["templateid"])
-
-            # analyze the rest of templates
-            print("there is a todo list to go through")
-            while len(todo)>0:
-                dependencies = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
-                    "method":"template.get",
-                    "params":{
-                        "templateids":todo[0],
-                        "output":["host","parentTemplates"],
-                        "selectParentTemplates":"query"
-                        },
-                "auth":token,"id":1}), verify=False).text))[0].value
-
-                todo.remove(todo[0])
-
-                for p in dependencies:
-                    if len(p["parentTemplates"])>0:
-                        for n in p["parentTemplates"]:
-                            todo.append(n["templateid"])
-                            templatesToExport.append(n["templateid"])
-
             # get template name of master
             for name in templateMappingBetweenIdAndName:
                 if name["templateid"]==templateid["templateid"]:
                     nameOfMaster = name["host"]
                     break
+            # check if this template has been exported before in this session
+            if templateid["templateid"] not in masterTemplatesCompletedIDs:
+                # set an empty todo list
+                todo = []
+                # set an empty array
+                templatesToExport = []
+                # add parrent to archive
+                templatesToExport.append(templateid["templateid"])
+                # add parrent to todo list for analisis
+                todo.append(templateid["templateid"])
 
+                # analyze the rest of templates
+                print("there is a todo list to go through")
+                while len(todo)>0:
+                    dependencies = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
+                        "method":"template.get",
+                        "params":{
+                            "templateids":todo[0],
+                            "output":["host","parentTemplates"],
+                            "selectParentTemplates":"query"
+                            },
+                    "auth":token,"id":1}), verify=False).text))[0].value
 
-            #print("total amount of templates to export per '"+templateid["templateid"]+"' is: ")
-            print("total amount of templates to export per '"+nameOfMaster+"' is: ")
-            print(templatesToExport)
+                    todo.remove(todo[0])
 
-            # export template bundle
-            xmlTemplateBundle = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
-   "jsonrpc": "2.0",
-    "method": "configuration.export",
-    "params": { "options": { "templates": templatesToExport },
-        "format": "xml"
-    },
-    "auth": token,
-    "id": 1
-          }), verify=False).text))[0].value
+                    for p in dependencies:
+                        if len(p["parentTemplates"])>0:
+                            for n in p["parentTemplates"]:
+                                todo.append(n["templateid"])
+                                templatesToExport.append(n["templateid"])
 
-            path = os.path.join(templateExportDir,templateid["templateid"])
-            f = open( templateExportDir + '/nested/' + templateid["templateid"] + '.xml', "w")
-            f.write(xmlTemplateBundle)
-            f.close()
+                masterTemplatesCompletedIDs.append(templateid["templateid"])
 
+                #print("total amount of templates to export per '"+templateid["templateid"]+"' is: ")
+                print("total amount of templates to export per '"+nameOfMaster+"' is:",len(templatesToExport),", here is list:")
+                print(templatesToExport)
 
+                # export template bundle
+                xmlTemplateBundle = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
+                    "method": "configuration.export",
+                    "params": {
+                        "options": {
+                            "templates": templatesToExport
+                            },
+                        "format": "xml"
+                        },
+                "auth": token,"id": 1}), verify=False).text))[0].value
+
+                path = os.path.join(templateExportDir,'nested/',)
+                f = open( path + nameOfMaster + '.xml', "w")
+                f.write(xmlTemplateBundle)
+                f.close()
+            else:
+                print("'"+nameOfMaster+"' has been exported before")
 
 
