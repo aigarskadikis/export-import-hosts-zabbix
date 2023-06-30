@@ -248,8 +248,29 @@ for newHost in listOfHosts:
             else:
                 unknownSNMPversion=1
 
+        # check if this is ZBX host
+        elif newHost["interface_type"]=='4':
+            try:
+                # create a Zabbix agent host
+                print(parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
+                    "method":"host.create",
+                    "params":{
+                        "host":newHost["hostName"],
+                        "interfaces":[{
+                            "type":4,
+                            "main":1,
+                            "useip":1,
+                            "ip":newHost["interface_ip"],
+                            "dns":newHost["interface_dns"],
+                            "port":newHost["interface_port"]}],
+                        "groups":[{"groupid":"5"}],
+                        "macros":newHostMacros
+                        },
+                "auth": token,"id":1}),verify=False).text))[0].value)
+            except:
+                print("unable to create JMX host")
         else:
-                notMatchinSNMPorZBX=1
+            print("this is not ZBX, not SNMP, not JMX host")
 
 listOfHostsCSV.close()
 listOfHostMacrosCSV.close()
