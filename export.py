@@ -66,20 +66,40 @@ else:
             print("specified host group '"+opts.group+"' exists, but do not contain any host objects. nothing to do")
             readyToQueryHostObjects = 0
         else:
-            print(listOfHostGroups[0]["hosts"])
+            for host in listOfHostGroups[0]["hosts"]:
+                hostListInCare.append(host["hostid"])
 
 if readyToQueryHostObjects:
-    # get list of hosts
-    listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
-    "method": "host.get",
-    "params": {
-        "output":["host","hostid","status","maintenance_status","groups"],
-        "selectItems": "count",
-        "selectParentTemplates": ["host"],
-        "selectTriggers": "count",
-        "selectInterfaces": "extend",
-        "selectMacros": "extend",
-        "selectGroups":"extend"},
-    "auth": token, "id": 1}), verify=False).text))[0].value
+    if len(hostListInCare) == 0:
+        # get list of hosts
+        listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+            "method": "host.get",
+            "params": {
+                "output":["host","hostid","status","maintenance_status","groups"],
+                "selectItems": "count",
+                "selectParentTemplates": ["host"],
+                "selectTriggers": "count",
+                "selectInterfaces": "extend",
+                "selectMacros": "extend",
+                "selectGroups":"extend"},
+            "auth": token, "id": 1}), verify=False).text))[0].value
+    else:
+        listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+            "method": "host.get",
+            "params": {
+                "hostids": hostListInCare,
+                "output":["host","hostid","status","maintenance_status","groups"],
+                "selectItems": "count",
+                "selectParentTemplates": ["host"],
+                "selectTriggers": "count",
+                "selectInterfaces": "extend",
+                "selectMacros": "extend",
+                "selectGroups":"extend"},
+            "auth": token, "id": 1}), verify=False).text))[0].value
+
+
+pprint(listOfHosts)
+
+
 
 
