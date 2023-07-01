@@ -131,6 +131,41 @@ if len(listOfHosts) > 0:
                 row["macros"] = host["macros"]
 
                 try:
+                    row["interfaceid"] = interface["interfaceid"]
+                except:
+                    row["interfaceid"] = ""
+
+                try:
+                    row["main"] = interface["main"]
+                except:
+                    row["main"] = ""
+
+                try:
+                    row["type"] = interface["type"]
+                except:
+                    row["type"] = ""
+
+                try:
+                    row["useip"] = interface["useip"]
+                except:
+                    row["useip"] = ""
+
+                try:
+                    row["ip"] = interface["ip"]
+                except:
+                    row["ip"] = ""
+
+                try:
+                    row["dns"] = interface["dns"]
+                except:
+                    row["dns"] = ""
+
+                try:
+                    row["port"] = interface["port"]
+                except:
+                    row["port"] = ""
+
+                try:
                     row["community"] = interface["interface_details"]['community']
                 except:
                     row["community"] = ""
@@ -190,6 +225,14 @@ if len(listOfHosts) > 0:
             row["allGroups"] = hostGroupBundle
             row["macros"] = host["macros"]
 
+            row["interfaceid"] = ""
+            row["main"] = ""
+            row["type"] = ""
+            row["useip"] = ""
+            row["ip"] = ""
+            row["dns"] = ""
+            row["port"] = ""
+
             row["community"] = ""
             row["authpassphrase"] = ""
             row["authprotocol"] = ""
@@ -231,11 +274,13 @@ if len(listOfHostGroups) > 0:
                 # if there are macros defined on this host
                 if len(data["macros"]) > 0:
                     for macro in data["macros"]:
+                        macro["hostName"] = data["host"]
                         if macrosHeaderYes == 0:
                             header = macro.keys()
                             csvMacrosList_writer.writerow(header)
                             macrosHeaderYes += 1
                         csvMacrosList_writer.writerow(macro.values())
+            data.pop("macros")
                     
 
         macrosCSV.close()
