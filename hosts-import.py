@@ -70,7 +70,7 @@ listOfHostMacros = list(csv.DictReader(listOfHostMacrosCSV))
 payload = json.dumps({"jsonrpc":"2.0","method":"user.login","params":{"user":user,"password":password},"id":1})
 headers = {'Content-Type': 'application/json'}
 
-response = requests.request("POST", url, headers=headers, data=payload, verify=False)
+response = requests.request("POST", url, headers=headers, data=payload.encode('utf-8'), verify=False)
 
 #print(response.text)
 token = parse('$.result').find(json.loads(response.text))[0].value
@@ -84,7 +84,7 @@ listOfExistingHosts = parse('$.result').find(json.loads(requests.request("POST",
     },
     "auth": token,
     "id": 1
-}), verify=False).text))[0].value
+}).encode('utf-8'), verify=False).text))[0].value
 
 # existing templates
 listOfExistingTemplates = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
@@ -95,7 +95,7 @@ listOfExistingTemplates = parse('$.result').find(json.loads(requests.request("PO
     },
     "auth": token,
     "id": 1
-}), verify=False).text))[0].value
+}).encode('utf-8'), verify=False).text))[0].value
 
 # take new host
 for newHost in listOfHosts:
@@ -110,240 +110,246 @@ for newHost in listOfHosts:
     if hostExists:
         print(bcolors.OKGREEN + "'" + newHost["host"] + "', "+ bcolors.ENDC,end='', flush=True)
     else:
-        # need to register new host
-        #print(bcolors.WARNING + "host '"+newHost["host"] + "' is not yet registred. will register it now"+bcolors.ENDC)
+        if newHost["main"] == '1':
+            # need to register new host
+            #print(bcolors.WARNING + "host '"+newHost["host"] + "' is not yet registred. will register it now"+bcolors.ENDC)
 
-        # define new list of macros which is about to be installed on this host
-        newHostMacros = []
+            # define new list of macros which is about to be installed on this host
+            newHostMacros = []
 
-        # there can be mulitple lines in the list which match hostname
-        for macro in listOfHostMacros:
-            #print(macro["macro"])
-            if macro["hostName"] == newHost["host"]:
-                #print("found one matching line in macros.csv")
-                # a host can have multiple macros
-                row = {}
-                # all columns must exist in CSV
-                row["macro"] = macro["macro"]
-                row["description"] = macro["description"]
-                row["value"] = macro["value"]
-                row["type"] = macro["type"]
-                newHostMacros.append(row)
-
-        # pick up template bundle
-        templatesToAdd = newHost["templateBundle"].split(';')
-        #print("template names which needs to be attached to this host:",templatesToAdd)
-
-        # keep in track tmeplate IDs to add
-        templateIDsToAdd = []
-
-        # if template list is not empty
-        if (len(newHost["templateBundle"]) > 0 and len(templatesToAdd) > 0):
-            #print("analyze templates which needs to be linked to new host")
-            # analyze what is inside
-
-
-            # set flag to measyre if all dependencies for host is completed
-            allTemplatesExist=1
-
-            for oneOfTemplatesToAdd in templatesToAdd:
-                # lets assume this template does not exist in destination
-                templateIdInDestination = 0
-                # go through all templates and look up if template exists
-                for existingTemplate in listOfExistingTemplates:
-                    if existingTemplate["host"] == oneOfTemplatesToAdd:
-                        templateIdInDestination = existingTemplate["templateid"]
-                
-                # if api reported a non-empty output, the template ID exists.
-                if not templateIdInDestination == 0:
-                    # add template to list which be attached to host object
+            # there can be mulitple lines in the list which match hostname
+            for macro in listOfHostMacros:
+                #print(macro["macro"])
+                if macro["hostName"] == newHost["host"]:
+                    #print("found one matching line in macros.csv")
+                    # a host can have multiple macros
                     row = {}
-                    row["templateid"] = templateIdInDestination
-                    templateIDsToAdd.append(row)
+                    # all columns must exist in CSV
+                    row["macro"] = macro["macro"]
+                    row["description"] = macro["description"]
+                    row["value"] = macro["value"]
+                    row["type"] = macro["type"]
+                    newHostMacros.append(row)
+
+            # pick up template bundle
+            templatesToAdd = newHost["templateBundle"].split(';')
+            #print("template names which needs to be attached to this host:",templatesToAdd)
+
+            # keep in track tmeplate IDs to add
+            templateIDsToAdd = []
+
+            # if template list is not empty
+            if (len(newHost["templateBundle"]) > 0 and len(templatesToAdd) > 0):
+                #print("analyze templates which needs to be linked to new host")
+                # analyze what is inside
+
+
+                # set flag to measure if all dependencies for host is completed
+                allTemplatesExist=1
+
+                for oneOfTemplatesToAdd in templatesToAdd:
+                    # lets assume this template does not exist in destination
+                    templateIdInDestination = 0
+                    # go through all templates and look up if template exists
+                    for existingTemplate in listOfExistingTemplates:
+                        if existingTemplate["host"] == oneOfTemplatesToAdd:
+                            templateIdInDestination = existingTemplate["templateid"]
+                    #print(templateIDsToAdd)
                     
-                else:
+                    # if api reported a non-empty output, the template ID exists.
+                    if not templateIdInDestination == 0:
+                        # add template to list which be attached to host object
+                        row = {}
+                        row["templateid"] = templateIdInDestination
+                        templateIDsToAdd.append(row)
+                        
+                    else:
 
-                    # check in file system if such template object exists
-                    try:
-                        with open(locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+'.xml', 'r', encoding='utf-8') as file:
-                            templateXMLtoImport = file.read().replace('\n', '')
+                        # check in file system if such template object exists
+                        
+                        try:
+                            with open(locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+'.xml', 'r', encoding='utf-8') as file:
+                                templateXMLtoImport = file.read().replace('\n', '')
 
-                            uploadTemplatePayload=json.dumps({"jsonrpc":"2.0",
-                                "method":"configuration.import",
-                                "params":{
-                                    "format":"xml",
-                                    "rules":{
-                                        "groups":{"createMissing":True,"updateExisting":True},
-                                        "templates":{"createMissing":True,"updateExisting":True},
-                                        "valueMaps":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
-                                        "templateDashboards":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
-                                        "templateLinkage":{"createMissing":True,"deleteMissing":False},
-                                        "items":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
-                                        "discoveryRules":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
-                                        "triggers":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
-                                        "graphs":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
-                                        "httptests":{"createMissing":True,"updateExisting":True,"deleteMissing":True}
+                                uploadTemplatePayload=json.dumps({"jsonrpc":"2.0",
+                                    "method":"configuration.import",
+                                    "params":{
+                                        "format":"xml",
+                                        "rules":{
+                                            "groups":{"createMissing":True,"updateExisting":True},
+                                            "templates":{"createMissing":True,"updateExisting":True},
+                                            "valueMaps":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                            "templateDashboards":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                            "templateLinkage":{"createMissing":True,"deleteMissing":False},
+                                            "items":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                            "discoveryRules":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                            "triggers":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                            "graphs":{"createMissing":True,"updateExisting":True,"deleteMissing":True},
+                                            "httptests":{"createMissing":True,"updateExisting":True,"deleteMissing":True}
+                                            },
+                                        "source": templateXMLtoImport},
+                                    "auth":token,"id":1})
+
+                                # this is to troubleshoot if API call does not work
+                                #print(uploadTemplatePayload)
+                                outputOfUpload = parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=uploadTemplatePayload.encode('utf-8'),verify=False).text))[0].value
+    #                            print(outputOfUpload)
+
+                                # do a follow up and check if template exists, pick up tamplate ID
+                                #sleep(1000)
+                                newTemplateID = parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=json.dumps({"jsonrpc":"2.0",
+                                    "method":"template.get",
+                                    "params":{
+                                        "output":["templateid","host"],
+                                        "search":{"host":oneOfTemplatesToAdd},
+                                        "searchWildcardsEnabled":1
                                         },
-                                    "source": templateXMLtoImport},
-                                "auth":token,"id":1})
+    "auth":token,"id":1}).encode('utf-8'),verify=False).text))[0].value
 
-                            # this is to troubleshoot if API call does not work
-                            #print(uploadTemplatePayload)
-                            outputOfUpload = parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=uploadTemplatePayload,verify=False).text))[0].value
-#                            print(outputOfUpload)
+                                try:
+                                    # add new template name to virtual list
+                                    row = {}
+                                    row["host"] = oneOfTemplatesToAdd
+                                    row["templateid"] = newTemplateID[0]["templateid"]
+                                    print("new template '"+newTemplateID[0]["host"]+"', ",end='', flush=True)
+                                    listOfExistingTemplates.append(row)
+                                except:
+                                    print("cannot add variable to global templates list for destination")
 
-                            # do a follow up and check if template exists, pick up tamplate ID
-                            #sleep(1000)
-                            newTemplateID = parse('$.result').find(json.loads(requests.request("POST",url,headers=headers,data=json.dumps({"jsonrpc":"2.0",
-                                "method":"template.get",
-                                "params":{
-                                    "output":["templateid","host"],
-                                    "search":{"host":oneOfTemplatesToAdd},
-                                    "searchWildcardsEnabled":1
-                                    },
-"auth":token,"id":1}),verify=False).text))[0].value
-
-                            try:
-                                # add new template name to virtual list
-                                row = {}
-                                row["host"] = oneOfTemplatesToAdd
-                                row["templateid"] = newTemplateID[0]["templateid"]
-                                print("new template '"+newTemplateID[0]["host"]+"', ",end='', flush=True)
-                                listOfExistingTemplates.append(row)
-                            except:
-                                print("cannot add variable to global templates list for destination")
-
-                            try:
-                                row = {}
-                                row["templateid"] = newTemplateID[0]["templateid"]
-                                templateIDsToAdd.append(row)
-                            except:
-                                print("cannot prepare template list payload for host.create function")
+                                try:
+                                    row = {}
+                                    row["templateid"] = newTemplateID[0]["templateid"]
+                                    templateIDsToAdd.append(row)
+                                except:
+                                    print("cannot prepare template list payload for host.create function")
 
 
-                    except:
-                        print(bcolors.FAIL +"import template '"+ oneOfTemplatesToAdd  + "' failed, therefore cannot register host '"+newHost["host"]+". try manually importing '"+ locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+".xml', and rerun script. "+ bcolors.ENDC,end='', flush=True)
-                        allTemplatesExist=0
+                        except:
+                            print(bcolors.FAIL +"import template '"+ oneOfTemplatesToAdd  + "' failed, therefore cannot register host '"+newHost["host"]+". try manually importing '"+ locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+".xml', and rerun script. "+ bcolors.ENDC,end='', flush=True)
+                            allTemplatesExist=0
 
-        if allTemplatesExist == 1:
-            if newHost["type"]=='1':
-                try:
-                    # create a Zabbix agent host
-                    parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
-                        "method":"host.create",
-                        "params":{
-                            "host":newHost["host"],
-                            "interfaces":[{
-                                "type":1,
-                                "main":1,
-                                "useip":1,
-                                "ip":newHost["ip"],
-                                "dns":newHost["dns"],
-                                "port":newHost["port"]}],
-                            "groups":[{"groupid":"5"}],
-                            "macros":newHostMacros,
-                            "templates":templateIDsToAdd
-                            },
-                    "auth": token,"id":1}),verify=False).text))[0].value
-                    print("new ZBX host '"+newHost["host"]+"', ",end='', flush=True)
-                except:
-                    print("unable to create ZBX host")
-
-                
-            elif newHost["type"]=='2':
-                #print("new host is SNMP")
-                # this is SNMP host. Need to check version
-
-                if newHost["version"]=='2':
-                    # this is SNMPv2 host
+            if allTemplatesExist == 1:
+                if newHost["type"]=='1':
                     try:
-                        # create a SNMPv3 host. SNMPv3 host has 9 characteristics
-                        parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+                        # create a Zabbix agent host
+                        parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
                             "method":"host.create",
                             "params":{
-                                "host":newHost["host"],"interfaces":[{
-                                    "type":2,
+                                "host":newHost["host"],
+                                "interfaces":[{
+                                    "type":1,
                                     "main":1,
                                     "useip":1,
                                     "ip":newHost["ip"],
                                     "dns":newHost["dns"],
-                                    "port":newHost["port"],
-                                    "details":{
-                                        "community":newHost["community"],
-                                        "bulk":newHost["bulk"],
-                                        "version":newHost["version"]}}],
+                                    "port":newHost["port"]}],
                                 "groups":[{"groupid":"5"}],
                                 "macros":newHostMacros,
-                                "templates":templateIDsToAdd},
-                        "auth": token,"id": 1}), verify=False).text))[0].value
-                        print("new SNMPv2 host '"+newHost["host"]+"', ",end='', flush=True)
+                                "templates":templateIDsToAdd
+                                },
+                        "auth": token,"id":1}).encode('utf-8'),verify=False).text))[0].value
+                        print("new ZBX host '"+newHost["host"]+"', ",end='', flush=True)
                     except:
-                        print("unable to create SNMPv2 host")
+                        print("unable to create ZBX host")
 
-                elif newHost["version"]=='3':
-                    # this is SNMPv3 host
+                    
+                elif newHost["type"]=='2':
+                    #print("new host is SNMP")
+                    # this is SNMP host. Need to check version
+
+                    if newHost["version"]=='2':
+                        # this is SNMPv2 host
+                        try:
+                            # create a SNMPv3 host. SNMPv3 host has 9 characteristics
+                            parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+                                "method":"host.create",
+                                "params":{
+                                    "host":newHost["host"],"interfaces":[{
+                                        "type":2,
+                                        "main":1,
+                                        "useip":1,
+                                        "ip":newHost["ip"],
+                                        "dns":newHost["dns"],
+                                        "port":newHost["port"],
+                                        "details":{
+                                            "community":newHost["community"],
+                                            "bulk":newHost["bulk"],
+                                            "version":newHost["version"]}}],
+                                    "groups":[{"groupid":"5"}],
+                                    "macros":newHostMacros,
+                                    "templates":templateIDsToAdd},
+                            "auth": token,"id": 1}).encode('utf-8'), verify=False).text))[0].value
+                            print("new SNMPv2 host '"+newHost["host"]+"', ",end='', flush=True)
+                        except:
+                            print("unable to create SNMPv2 host")
+
+                    elif newHost["version"]=='3':
+                        # this is SNMPv3 host
+                        try:
+                            # create a SNMPv3 host. SNMPv3 host has 9 characteristics
+                            parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+                                "method":"host.create",
+                                "params":{
+                                    "host":newHost["host"],"interfaces":[{
+                                        "type":2,
+                                        "main":1,
+                                        "useip":1,
+                                        "ip":newHost["ip"],
+                                        "dns":newHost["dns"],
+                                        "port":newHost["port"],
+                                        "details":{
+                                            "version":newHost["version"],
+                                            "bulk":newHost["bulk"],
+                                            "securityname":newHost["securityname"],
+                                            "contextname":newHost["contextname"],
+                                            "securitylevel":newHost["securitylevel"],
+                                            "authpassphrase":newHost["authpassphrase"],
+                                            "authprotocol":newHost["authprotocol"],
+                                            "privpassphrase":newHost["privpassphrase"],
+                                            "privprotocol":newHost["privprotocol"]}}],
+                                        "groups":[{"groupid":"5"}],
+                                        "macros":newHostMacros,
+                                        "templates":templateIDsToAdd
+                                        },
+                            "auth":token,"id":1}).encode('utf-8'),verify=False).text))[0].value
+                            print("new SNMPv3 host '"+newHost["host"]+"', ",end='', flush=True)
+                        except:
+                            print("unable to create SNMPv3 host")
+                    else:
+                        unknownSNMPversion=1
+
+                # check if this is ZBX host
+                elif newHost["type"]=='4':
                     try:
-                        # create a SNMPv3 host. SNMPv3 host has 9 characteristics
-                        parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+                        # create a Zabbix agent host
+                        parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
                             "method":"host.create",
                             "params":{
-                                "host":newHost["host"],"interfaces":[{
-                                    "type":2,
+                                "host":newHost["host"],
+                                "interfaces":[{
+                                    "type":4,
                                     "main":1,
                                     "useip":1,
                                     "ip":newHost["ip"],
                                     "dns":newHost["dns"],
-                                    "port":newHost["port"],
-                                    "details":{
-                                        "version":newHost["version"],
-                                        "bulk":newHost["bulk"],
-                                        "securityname":newHost["securityname"],
-                                        "contextname":newHost["contextname"],
-                                        "securitylevel":newHost["securitylevel"],
-                                        "authpassphrase":newHost["authpassphrase"],
-                                        "authprotocol":newHost["authprotocol"],
-                                        "privpassphrase":newHost["privpassphrase"],
-                                        "privprotocol":newHost["privprotocol"]}}],
-                                    "groups":[{"groupid":"5"}],
-                                    "macros":newHostMacros,
-                                    "templates":templateIDsToAdd
-                                    },
-                        "auth":token,"id":1}),verify=False).text))[0].value
-                        print("new SNMPv3 host '"+newHost["host"]+"', ",end='', flush=True)
+                                    "port":newHost["port"]}],
+                                "groups":[{"groupid":"5"}],
+                                "macros":newHostMacros,
+                                "templates":templateIDsToAdd
+                                },
+                        "auth": token,"id":1}).encode('utf-8'),verify=False).text))[0].value
+                        print("new JMX host '"+newHost["host"]+"', ",end='', flush=True)
                     except:
-                        print("unable to create SNMPv3 host")
+                        print("unable to create JMX host")
                 else:
-                    unknownSNMPversion=1
-
-            # check if this is ZBX host
-            elif newHost["type"]=='4':
-                try:
-                    # create a Zabbix agent host
-                    parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
-                        "method":"host.create",
-                        "params":{
-                            "host":newHost["host"],
-                            "interfaces":[{
-                                "type":4,
-                                "main":1,
-                                "useip":1,
-                                "ip":newHost["ip"],
-                                "dns":newHost["dns"],
-                                "port":newHost["port"]}],
-                            "groups":[{"groupid":"5"}],
-                            "macros":newHostMacros,
-                            "templates":templateIDsToAdd
-                            },
-                    "auth": token,"id":1}),verify=False).text))[0].value
-                    print("new JMX host '"+newHost["host"]+"', ",end='', flush=True)
-                except:
-                    print("unable to create JMX host")
+                    print("this is not ZBX, not SNMP, not JMX host")
             else:
-                print("this is not ZBX, not SNMP, not JMX host")
-        else:
-            #print("not all templates are ready. skipping regitration per '",newHost["host"],"', enable 'print(uploadTemplatePayload)' and simulate JSON via Postman")
-            #print()
-            a=1
+                #print("not all templates are ready. skipping regitration per '",newHost["host"],"', enable 'print(uploadTemplatePayload)' and simulate JSON via Postman")
+                #print()
+                a=1
+
+
+
 print()
 listOfHostsCSV.close()
 listOfHostMacrosCSV.close()

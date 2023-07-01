@@ -44,7 +44,7 @@ except:
 payload = json.dumps({"jsonrpc":"2.0","method":"user.login","params":{"user":user,"password":password},"id":1})
 headers = {'Content-Type': 'application/json'}
 
-response = requests.request("POST", url, headers=headers, data=payload, verify=False)
+response = requests.request("POST", url, headers=headers, data=payload.encode('utf-8'), verify=False)
 
 #print(response.text)
 token = parse('$.result').find(json.loads(response.text))[0].value
@@ -56,7 +56,7 @@ listOfHostsHavingTemplates = parse('$.result').find(json.loads(requests.request(
     "output":["parentTemplates","host","hostid"],
     "selectParentTemplates":"query"
     },
-"auth":token,"id": 1}), verify=False).text))[0].value
+"auth":token,"id": 1}).encode('utf-8'), verify=False).text))[0].value
 
 # mapping between templateid and template name
 templateMappingBetweenIdAndName = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
@@ -64,7 +64,7 @@ templateMappingBetweenIdAndName = parse('$.result').find(json.loads(requests.req
 "params":{
     "output":["templateid","host"]
     },
-"auth":token,"id":1}), verify=False).text))[0].value
+"auth":token,"id":1}).encode('utf-8'), verify=False).text))[0].value
 
 # track the master template names which has been already done. This will save a lot of performance and API calls
 masterTemplatesCompletedIDs = []
@@ -104,7 +104,7 @@ for host in listOfHostsHavingTemplates:
                             "output":["host","parentTemplates"],
                             "selectParentTemplates":"query"
                             },
-                    "auth":token,"id":1}), verify=False).text))[0].value
+                    "auth":token,"id":1}).encode('utf-8'), verify=False).text))[0].value
 
                     todo.remove(todo[0])
 
@@ -129,7 +129,7 @@ for host in listOfHostsHavingTemplates:
                             },
                         "format": "xml"
                         },
-                "auth": token,"id": 1}), verify=False).text))[0].value
+                "auth": token,"id": 1}).encode('utf-8'), verify=False).text))[0].value
 
                 path = os.path.join(templateExportDir,'nested/',)
                 f = open( path + nameOfMaster + '.xml', "w", encoding='utf-8')

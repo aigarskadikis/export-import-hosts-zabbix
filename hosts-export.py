@@ -80,6 +80,7 @@ if readyToQueryHostObjects:
                 "selectItems": "count",
                 "selectParentTemplates": ["host"],
                 "selectTriggers": "count",
+                "selectDiscoveries": "extend",
                 "selectInterfaces": "extend",
                 "selectMacros": "extend",
                 "selectGroups":"extend"},
@@ -93,6 +94,7 @@ if readyToQueryHostObjects:
                 "selectItems": "count",
                 "selectParentTemplates": ["host"],
                 "selectTriggers": "count",
+                "selectDiscoveries": "count",
                 "selectInterfaces": "extend",
                 "selectMacros": "extend",
                 "selectGroups":"extend"},
@@ -103,8 +105,6 @@ if len(listOfHosts) > 0:
     for data in listOfHosts:
         # calculate few extra fields
         data["amountOfMacros"] = len(data["macros"])
-        data["amountOfItems"] = data["items"]
-        data["amountOfTriggers"] = data["triggers"]
         data["amountOfInterfaces"] = len(data["interfaces"])
 
     for host in listOfHosts:
@@ -135,13 +135,16 @@ if len(listOfHosts) > 0:
                 # table 'hosts'
                 row["hostid"] = host["hostid"]
                 row["host"] = host["host"]
+                row["status"] = host["status"]
+                row["maintenance_status"] = host["maintenance_status"]
 
                 # custom
                 row["templateBundle"] = templateBundle
                 row["allGroups"] = hostGroupBundle
                 row["amountOfMacros"] = host["amountOfMacros"]
-                row["amountOfItems"] = host["amountOfItems"]
-                row["amountOfTriggers"] = host["amountOfTriggers"]
+                row["items"] = host["items"]
+                row["triggers"] = host["triggers"]
+                row["discoveries"] = len(host["discoveries"])
                 row["amountOfInterfaces"] = host["amountOfInterfaces"]
 
                 # 7 fields from table 'interfaces'
@@ -240,17 +243,19 @@ if len(listOfHosts) > 0:
             # table 'hosts'
             row["hostid"] = host["hostid"]
             row["host"] = host["host"]
+            row["status"] = host["status"]
+            row["maintenance_status"] = host["maintenance_status"]
 
             # 6 custom fields
             row["templateBundle"] = templateBundle
             row["allGroups"] = hostGroupBundle
             row["amountOfMacros"] = host["amountOfMacros"]
-            row["amountOfItems"] = host["amountOfItems"]
-            row["amountOfTriggers"] = host["amountOfTriggers"]
+            row["items"] = host["items"]
+            row["triggers"] = host["triggers"]
+            row["discoveries"] = len(host["discoveries"])
             row["amountOfInterfaces"] = host["amountOfInterfaces"]
 
             # characteritics from table 'interfaces'. 7 fields
-
             row["interfaceid"] = ""
             row["main"] = ""
             row["type"] = ""
