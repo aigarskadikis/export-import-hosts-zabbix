@@ -97,9 +97,51 @@ if readyToQueryHostObjects:
                 "selectGroups":"extend"},
             "auth": token, "id": 1}), verify=False).text))[0].value
 
+if len(listOfHosts) > 0:
+    for host in listOfHosts:
+        
+        # prepare template list as one value in cell
+        templateBundle=''
+        if len(host["parentTemplates"])>0:
+            for idx,elem in enumerate(host["parentTemplates"]):
+                templateBundle+=elem["host"]
+                # if not last element
+                if idx!=len(host["parentTemplates"])-1:
+                    templateBundle+=';'
 
-pprint(listOfHosts)
+        # prepare host group list as one value in cell
+        hostGroupBundle=''
+        if len(host["groups"])>0:
+            for idx,elem in enumerate(host["groups"]):
+                hostGroupBundle+=elem["name"]
+                # if not last element
+                if idx!=len(host["groups"])-1:
+                    hostGroupBundle+=';'
 
+
+        # if interface array is not empty
+        if len(host["interfaces"]) > 0:
+            row = {}
+            row["hostid"] = host["hostid"]
+            row["host"] = host["host"]
+            row["templateBundle"] = templateBundle
+            row["allGroups"] = hostGroupBundle
+            row["macros"] = host["macros"]
+
+            dataInOutput.append(row)
+
+        else:
+            row = {}
+            row["hostid"] = host["hostid"]
+            row["host"] = host["host"]
+            row["templateBundle"] = templateBundle
+            row["allGroups"] = hostGroupBundle
+            row["macros"] = host["macros"]
+
+            dataInOutput.append(row)
+
+
+pprint(dataInOutput)
 
 
 
