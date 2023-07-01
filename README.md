@@ -7,19 +7,41 @@ Export list of host objects, host level macros from Zabbix 5.0 and import into Z
 * Works with Python 3.9
 * Export tested with 5.0.23
 * Import tested with 6.0.18
-* Credentials in separate file. /var/lib/zabbix/config.py out from box
-* Use native JSON/requests. not using 'pyzabbix' or 'zabbixapi' module. Can use official documents from https://www.zabbix.com/documentation/5.0/en/manual/api and copy snippet prety much 1:1
-* Remove HTTPS errors. Not really a feature!
+* Credentials in separate file /var/lib/zabbix/config.py
 * Every host element will have all SNMPv3 fiels. They will be blank if not used
 
-## CSV export for host objects
+## Test frontend connection
 
 On frontend server, test if frontend is reachable
 ```
 curl -kL http://127.0.0.1 | grep Zabbix
 ```
 
-Create a profile to communicate with Zabbix API
+## Download and install scripts
+
+Install git utility to download this project
+```
+dnf -y install git
+```
+
+Install Python3.9
+```
+dnf -y install python3.9 python3.9-pip
+```
+
+Install modules required by program
+```
+pip3.9 install jsonpath-ng requests
+```
+
+Download this project
+```
+cd && git clone https://github.com/aigarskadikis/export-import-hosts-zabbix.git && cd export-import-hosts-zabbix
+```
+
+## Configure access characteristics and export/import directories
+
+Create directory
 ```
 mkdir -p /var/lib/zabbix
 ```
@@ -42,34 +64,16 @@ password_dest_instance = 'zabbix'
 " | sudo tee /var/lib/zabbix/config.py
 ```
 
-Install git utility to download this project
-```
-dnf -y install git
-```
-
-Install Python3.9
-```
-dnf -y install python3.9 python3.9-pip
-```
-
-Install modules required by program
-```
-pip3.9 install jsonpath-ng requests
-```
-
-Download this project
-```
-cd && git clone https://github.com/aigarskadikis/export-import-hosts-zabbix.git && cd export-import-hosts-zabbix
-```
-
-Set the main program executable
-```
-chmod +x hosts-export.py
-```
+## Export hosts
 
 Export all hosts and create subdirectories per every host group
 ```
 ./hosts-export.py
+```
+
+To export hosts from a specific group
+```
+./hosts-export.py -g 'Linux servers'
 ```
 
 See output
@@ -77,21 +81,17 @@ See output
 find /tmp/csv -type f -name '*csv'
 ```
 
-## Template export
+## Export all templates individually
 
-Make sure 'zabbix_templates_export_dir' has been specified in config.py
-
-### Export all templates individually
-
-This is only for backup purpose
+Make sure 'zabbix_templates_export_dir' has been specified in config.py. Then run:
 
 ```
 ./templates-export.py
 ```
 
-### Create nested template bundles
+## Create an XML template archive for each master template
 
-This script will undertand all levels of nested template create one solid XML file which contains the whole tree. Script will create the "bundles" only for registred hosts (where template is really in use)
+Script will work with the templates which is already linked for hosts
 ```
 ./nested-templates-export.py
 ```
