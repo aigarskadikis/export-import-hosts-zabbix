@@ -92,15 +92,24 @@ listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, he
         "selectParentTemplates": ["host"],
         "selectTriggers": "count",
         "selectMacros": "extend",
-        "selectGroups":"query"},
+        "selectGroups":"extend"},
     "auth": token, "id": 1}), verify=False).text))[0].value
 
+# get list of interfaces
+listOfInterfaces = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+    "method": "hostinterface.get",
+    "params": {
+        "output": ["hostid","ip","dns","type","details","port","main"]},
+"auth": token,"id": 1}), verify=False).text))[0].value
+
+# list of host macros
 listOfHostMacros = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
     "method": "usermacro.get",
     "params": {
         "output":"extend"},
     "auth": token,"id": 1}), verify=False).text))[0].value
 
+# get list of host groups
 listOfHostGroups = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
     "method": "hostgroup.get",
     "params": { "output": ["groupid","name","hosts"], "selectHosts":"query" },
@@ -112,6 +121,8 @@ for host in listOfHosts:
     host["hostStatus"] = host.pop("status")
     host["amountOfItems"] = host.pop("items")
     host["amountOfTriggers"] = host.pop("triggers")
+
+    # prepare template list in one column
     templateBundle=''
     if len(host["parentTemplates"])>0:
         for idx,elem in enumerate(host["parentTemplates"]):
@@ -120,6 +131,18 @@ for host in listOfHosts:
             if idx!=len(host["parentTemplates"])-1:
                 templateBundle+=';'
     host["templateBundle"] = templateBundle
+
+    # prepare host group list on one column
+    hostGroupBundle=''
+    print(host["groups"])
+    if len(host["groups"])>0:
+        for idx,elem in enumerate(host["groups"]):
+            hostGroupBundle+=elem["name"]
+            # if not last element
+            if idx!=len(host["groups"])-1:
+                hostGroupBundle+=';'
+    host["allGroups"] = hostGroupBundle
+
     # remove parentTemplates after parsing
     host.pop("parentTemplates")
     # count macros in output
@@ -143,13 +166,6 @@ for macro in listOfHostMacros:
                 row["value"] = ""
             hostMacroWithHostName.append(row)
             break
-
-# get list of interfaces. pick up only the "main" ones
-listOfInterfaces = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
-    "method": "hostinterface.get",
-    "params": {
-        "output": ["hostid","ip","dns","type","details","port","main"]},
-"auth": token,"id": 1}), verify=False).text))[0].value
 
 # rename elements in JSON tree to not conflict while mapping with other result
 for interface in listOfInterfaces:
