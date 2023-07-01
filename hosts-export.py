@@ -71,8 +71,6 @@ else:
                 hostListInCare.append(host["hostid"])
 
 if readyToQueryHostObjects:
-
-
     if len(hostListInCare) == 0:
         # get list of hosts
         listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
@@ -272,56 +270,58 @@ if len(listOfHosts) > 0:
 if len(listOfHostGroups) > 0:
     print("creating hosts.csv, macros.csv into:")
     for group in listOfHostGroups:
-        # create a short list of all hostid in this host group
-        hostIDsInGroup = []
-        for id in group["hosts"]:
-            hostIDsInGroup.append(id["hostid"])
+        # if there are any hosts inside in this group
+        if len(group["hosts"]) > 0:
+            # create a short list of all hostid in this host group
+            hostIDsInGroup = []
+            for id in group["hosts"]:
+                hostIDsInGroup.append(id["hostid"])
 
-        # make sure a subdirectory of host group name exists
-        try:
-            os.makedirs(os.path.join(csv_export_dir, group["name"]))
-        except:
-            cannotMakeHostGroupDir = 1
+            # make sure a subdirectory of host group name exists
+            try:
+                os.makedirs(os.path.join(csv_export_dir, group["name"]))
+            except:
+                cannotMakeHostGroupDir = 1
 
-        print(os.path.join(csv_export_dir, group["name"]))
-
-
-
-        # order on writing hosts.csv, macros.csv is important. first must be macros as it will drop "macros" column when done
-        macrosCSV = open(os.path.join(csv_export_dir, group["name"], 'macros.csv'), 'w', newline='')
-        csvMacrosList_writer = csv.writer(macrosCSV)
-        
-        macrosHeaderYes = 0
-        for data in listOfHosts:
-            if data["hostid"] in hostIDsInGroup:
-                # if there are macros defined on this host
-                if len(data["macros"]) > 0:
-                    for macro in data["macros"]:
-                        macro["hostName"] = data["host"]
-                        if macrosHeaderYes == 0:
-                            header = macro.keys()
-                            csvMacrosList_writer.writerow(header)
-                            macrosHeaderYes += 1
-                        csvMacrosList_writer.writerow(macro.values())
-                    
-
-        macrosCSV.close()
+            print(os.path.join(csv_export_dir, group["name"]))
 
 
-        hostCSV = open(os.path.join(csv_export_dir, group["name"], 'hosts.csv'), 'w', newline='')
-        csvHostList_writer = csv.writer(hostCSV)
 
-        # order on writing hosts.csv, macros.csv is important. first must be macros as it will drop "macros" column when done
-        count = 0
-        for data in dataInOutput:
-            if count == 0:
-                header = data.keys()
-                csvHostList_writer.writerow(header)
-                count += 1
-            if data["hostid"] in hostIDsInGroup:
-                csvHostList_writer.writerow(data.values())
+            # order on writing hosts.csv, macros.csv is important. first must be macros as it will drop "macros" column when done
+            macrosCSV = open(os.path.join(csv_export_dir, group["name"], 'macros.csv'), 'w', newline='')
+            csvMacrosList_writer = csv.writer(macrosCSV)
+            
+            macrosHeaderYes = 0
+            for data in listOfHosts:
+                if data["hostid"] in hostIDsInGroup:
+                    # if there are macros defined on this host
+                    if len(data["macros"]) > 0:
+                        for macro in data["macros"]:
+                            macro["hostName"] = data["host"]
+                            if macrosHeaderYes == 0:
+                                header = macro.keys()
+                                csvMacrosList_writer.writerow(header)
+                                macrosHeaderYes += 1
+                            csvMacrosList_writer.writerow(macro.values())
+                        
 
-        hostCSV.close()
+            macrosCSV.close()
+
+
+            hostCSV = open(os.path.join(csv_export_dir, group["name"], 'hosts.csv'), 'w', newline='')
+            csvHostList_writer = csv.writer(hostCSV)
+
+            # order on writing hosts.csv, macros.csv is important. first must be macros as it will drop "macros" column when done
+            count = 0
+            for data in dataInOutput:
+                if count == 0:
+                    header = data.keys()
+                    csvHostList_writer.writerow(header)
+                    count += 1
+                if data["hostid"] in hostIDsInGroup:
+                    csvHostList_writer.writerow(data.values())
+
+            hostCSV.close()
 
 
 #pprint(dataInOutput)
