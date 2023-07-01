@@ -121,14 +121,65 @@ if len(listOfHosts) > 0:
 
         # if interface array is not empty
         if len(host["interfaces"]) > 0:
-            row = {}
-            row["hostid"] = host["hostid"]
-            row["host"] = host["host"]
-            row["templateBundle"] = templateBundle
-            row["allGroups"] = hostGroupBundle
-            row["macros"] = host["macros"]
+            for interface in host["interfaces"]:
+                row = {}
+                row["hostid"] = host["hostid"]
+                row["host"] = host["host"]
+                row["templateBundle"] = templateBundle
+                row["allGroups"] = hostGroupBundle
+                row["macros"] = host["macros"]
 
-            dataInOutput.append(row)
+                try:
+                    row["community"] = interface["interface_details"]['community']
+                except:
+                    row["community"] = ""
+                
+                try:
+                    row["authpassphrase"] = interface["interface_details"]['authpassphrase']
+                except:
+                    row["authpassphrase"] = ""
+
+                try:
+                    row["authprotocol"] = interface["interface_details"]['authprotocol']
+                except:
+                    row["authprotocol"] = ""
+
+                try:
+                    row["bulk"] = interface["interface_details"]['bulk']
+                except:
+                    row["bulk"] = ""
+
+                try:
+                    row["contextname"] = interface["interface_details"]['contextname']
+                except:
+                    row["contextname"] = ""
+
+                try:
+                    row["privpassphrase"] = interface["interface_details"]['privpassphrase']
+                except:
+                    row["privpassphrase"] = ""
+
+                try:
+                    row["privprotocol"] = interface["interface_details"]['privprotocol']
+                except:
+                    row["privprotocol"] = ""
+
+                try:
+                    row["securitylevel"] = interface["interface_details"]['securitylevel']
+                except:
+                    row["securitylevel"] = ""
+
+                try:
+                    row["securityname"] = interface["interface_details"]['securityname']
+                except:
+                    row["securityname"] = ""
+
+                try:
+                    row["version"] = interface["interface_details"]['version']
+                except:
+                    row["version"] = ""
+
+                dataInOutput.append(row)
 
         else:
             row = {}
@@ -137,6 +188,21 @@ if len(listOfHosts) > 0:
             row["templateBundle"] = templateBundle
             row["allGroups"] = hostGroupBundle
             row["macros"] = host["macros"]
+
+            row["community"] = ""
+            row["authpassphrase"] = ""
+            row["authprotocol"] = ""
+            row["bulk"] = ""
+            row["contextname"] = ""
+            row["privpassphrase"] = ""
+            row["privprotocol"] = ""
+            row["securitylevel"] = ""
+            row["securityname"] = ""
+            row["version"] = ""
+            row["interface_dns"] = ""
+            row["interface_ip"] = ""
+            row["interface_type"] = ""
+            row["interface_port"] = ""
 
             dataInOutput.append(row)
 
