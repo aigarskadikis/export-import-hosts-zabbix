@@ -210,6 +210,10 @@ if len(listOfHosts) > 0:
 
 if len(listOfHostGroups) > 0:
     for group in listOfHostGroups:
+        # create a short list of all hostid in this host group
+        hostIDsInGroup = []
+        for id in group["hosts"]:
+            hostIDsInGroup.append(id["hostid"])
 
         # make sure a subdirectory of host group name exists
         try:
@@ -218,10 +222,22 @@ if len(listOfHostGroups) > 0:
             cannotMakeHostGroupDir = 1
         hostCSV = open(os.path.join(csv_export_dir, group["name"], 'hosts.csv'), 'w', newline='')
         csvHostList_writer = csv.writer(hostCSV)
+
+        count = 0
+        for data in dataInOutput:
+            if count == 0:
+                header = data.keys()
+                csvHostList_writer.writerow(header)
+                count += 1
+            if data["hostid"] in hostIDsInGroup:
+                csvHostList_writer.writerow(data.values())
+
+
+
         hostCSV.close()
 
 
-pprint(dataInOutput)
+#pprint(dataInOutput)
 
 
 
