@@ -132,15 +132,19 @@ if len(listOfHosts) > 0:
         if len(host["interfaces"]) > 0:
             for interface in host["interfaces"]:
                 row = {}
+                # table 'hosts'
                 row["hostid"] = host["hostid"]
                 row["host"] = host["host"]
+
+                # custom
                 row["templateBundle"] = templateBundle
                 row["allGroups"] = hostGroupBundle
-
                 row["amountOfMacros"] = host["amountOfMacros"]
                 row["amountOfItems"] = host["amountOfItems"]
                 row["amountOfTriggers"] = host["amountOfTriggers"]
                 row["amountOfInterfaces"] = host["amountOfInterfaces"]
+
+                # 7 fields from table 'interfaces'
 
                 try:
                     row["interfaceid"] = interface["interfaceid"]
@@ -176,6 +180,8 @@ if len(listOfHosts) > 0:
                     row["port"] = interface["port"]
                 except:
                     row["port"] = ""
+
+                # 10 fields from table 'interface_snmp'
 
                 try:
                     row["community"] = interface["interface_details"]['community']
@@ -231,15 +237,19 @@ if len(listOfHosts) > 0:
 
         else:
             row = {}
+            # table 'hosts'
             row["hostid"] = host["hostid"]
             row["host"] = host["host"]
+
+            # 6 custom fields
             row["templateBundle"] = templateBundle
             row["allGroups"] = hostGroupBundle
-
             row["amountOfMacros"] = host["amountOfMacros"]
             row["amountOfItems"] = host["amountOfItems"]
             row["amountOfTriggers"] = host["amountOfTriggers"]
             row["amountOfInterfaces"] = host["amountOfInterfaces"]
+
+            # characteritics from table 'interfaces'. 7 fields
 
             row["interfaceid"] = ""
             row["main"] = ""
@@ -249,6 +259,7 @@ if len(listOfHosts) > 0:
             row["dns"] = ""
             row["port"] = ""
 
+            # characteristics from table 'interface_snmp'
             row["community"] = ""
             row["authpassphrase"] = ""
             row["authprotocol"] = ""
@@ -259,10 +270,6 @@ if len(listOfHosts) > 0:
             row["securitylevel"] = ""
             row["securityname"] = ""
             row["version"] = ""
-            row["interface_dns"] = ""
-            row["interface_ip"] = ""
-            row["interface_type"] = ""
-            row["interface_port"] = ""
 
             dataInOutput.append(row)
 

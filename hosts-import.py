@@ -226,7 +226,7 @@ for newHost in listOfHosts:
                         allTemplatesExist=0
 
         if allTemplatesExist == 1:
-            if newHost["interface_type"]=='1':
+            if newHost["type"]=='1':
                 try:
                     # create a Zabbix agent host
                     parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
@@ -237,9 +237,9 @@ for newHost in listOfHosts:
                                 "type":1,
                                 "main":1,
                                 "useip":1,
-                                "ip":newHost["interface_ip"],
-                                "dns":newHost["interface_dns"],
-                                "port":newHost["interface_port"]}],
+                                "ip":newHost["ip"],
+                                "dns":newHost["dns"],
+                                "port":newHost["port"]}],
                             "groups":[{"groupid":"5"}],
                             "macros":newHostMacros,
                             "templates":templateIDsToAdd
@@ -250,7 +250,7 @@ for newHost in listOfHosts:
                     print("unable to create ZBX host")
 
                 
-            elif newHost["interface_type"]=='2':
+            elif newHost["type"]=='2':
                 #print("new host is SNMP")
                 # this is SNMP host. Need to check version
 
@@ -265,9 +265,9 @@ for newHost in listOfHosts:
                                     "type":2,
                                     "main":1,
                                     "useip":1,
-                                    "ip":newHost["interface_ip"],
-                                    "dns":newHost["interface_dns"],
-                                    "port":newHost["interface_port"],
+                                    "ip":newHost["ip"],
+                                    "dns":newHost["dns"],
+                                    "port":newHost["port"],
                                     "details":{
                                         "community":newHost["community"],
                                         "bulk":newHost["bulk"],
@@ -291,9 +291,9 @@ for newHost in listOfHosts:
                                     "type":2,
                                     "main":1,
                                     "useip":1,
-                                    "ip":newHost["interface_ip"],
-                                    "dns":newHost["interface_dns"],
-                                    "port":newHost["interface_port"],
+                                    "ip":newHost["ip"],
+                                    "dns":newHost["dns"],
+                                    "port":newHost["port"],
                                     "details":{
                                         "version":newHost["version"],
                                         "bulk":newHost["bulk"],
@@ -316,7 +316,7 @@ for newHost in listOfHosts:
                     unknownSNMPversion=1
 
             # check if this is ZBX host
-            elif newHost["interface_type"]=='4':
+            elif newHost["type"]=='4':
                 try:
                     # create a Zabbix agent host
                     parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
@@ -327,9 +327,9 @@ for newHost in listOfHosts:
                                 "type":4,
                                 "main":1,
                                 "useip":1,
-                                "ip":newHost["interface_ip"],
-                                "dns":newHost["interface_dns"],
-                                "port":newHost["interface_port"]}],
+                                "ip":newHost["ip"],
+                                "dns":newHost["dns"],
+                                "port":newHost["port"]}],
                             "groups":[{"groupid":"5"}],
                             "macros":newHostMacros,
                             "templates":templateIDsToAdd

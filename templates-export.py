@@ -92,7 +92,7 @@ listOfTemplates = parse('$.result').find(json.loads(requests.request("POST", url
     },
     "auth": token,
     "id": 1
-}), verify=False).text))[0].value
+}).encode('utf-8'), verify=False).text))[0].value
 
 
 ListOfGroups = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({
@@ -101,7 +101,7 @@ ListOfGroups = parse('$.result').find(json.loads(requests.request("POST", url, h
              "params": {
                  "output": ["groupid","name","templates"],
                  "selectTemplates":"query"},
-             "auth": token,"id": 1}), verify=False).text))[0].value
+             "auth": token,"id": 1}).encode('utf-8'), verify=False).text))[0].value
 
 if opts.templategroup:
     for hg in ListOfGroups:
@@ -121,7 +121,7 @@ if opts.templategroup:
                     # put template XML content in variable
                     xmlTemplate = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
                         "method":"configuration.export","params":{"options":{"templates":[t["templateid"]]},"format": "xml"},
-                        "auth": token,"id": 1}), verify=False).text))[0].value
+                        "auth": token,"id": 1}).encode('utf-8'), verify=False).text))[0].value
                     for templateGroup in n["groups"]:
                         for globalGroup in ListOfGroups:
                             if templateGroup["groupid"]==globalGroup["groupid"]:
@@ -130,7 +130,7 @@ if opts.templategroup:
                                     os.makedirs(path)
                                 except:
                                     cannotMakeDir = 1
-                                f = open(  templateExportDir + '/' + globalGroup["name"] + '/' +n["host"]+'.xml', "w")
+                                f = open(  templateExportDir + '/' + globalGroup["name"] + '/' +n["host"]+'.xml', "w",encoding='utf-8')
                                 f.write(xmlTemplate)
                                 f.close()
                     
@@ -150,7 +150,7 @@ else:
         # put template XML content in variable
         xmlTemplate = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
             "method":"configuration.export","params": { "options": { "templates": [ template["templateid"] ] },"format": "xml" },
-            "auth": token,"id": 1}), verify=False).text))[0].value
+            "auth": token,"id": 1}).encode('utf-8'), verify=False).text))[0].value
         
         # if template belongs to multiple template groups then create multiple directories
         for templateGroup in template["groups"]:
@@ -166,14 +166,14 @@ else:
                     except:
                         cannotMakeDir = 1
                     # open file for writing
-                    f = open(  templateExportDir + '/' + globalGroup["name"] + '/' +template["host"]+'.xml', "w")
+                    f = open(  templateExportDir + '/' + globalGroup["name"] + '/' +template["host"]+'.xml', "w",encoding='utf-8')
                     # write XML tempate content in file
                     f.write(xmlTemplate)
                     # close file
                     f.close()
         
         # there will be one single directory too to have all template objects in one place
-        f = open(  templateExportDir + '/all/' + template["host"]+'.xml', "w")
+        f = open(  templateExportDir + '/all/' + template["host"]+'.xml', "w",encoding='utf-8')
         f.write(xmlTemplate)
         f.close()
 
