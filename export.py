@@ -28,6 +28,7 @@ else:
 url = config.url_src_instance
 user = config.username_src_instance
 password = config.password_src_instance
+
 csv_export_dir = config.csv_export_dir
 
 try:
@@ -205,6 +206,19 @@ if len(listOfHosts) > 0:
             row["interface_port"] = ""
 
             dataInOutput.append(row)
+
+
+if len(listOfHostGroups) > 0:
+    for group in listOfHostGroups:
+
+        # make sure a subdirectory of host group name exists
+        try:
+            os.makedirs(os.path.join(csv_export_dir, group["name"]))
+        except:
+            cannotMakeHostGroupDir = 1
+        hostCSV = open(os.path.join(csv_export_dir, group["name"], 'hosts.csv'), 'w', newline='')
+        csvHostList_writer = csv.writer(hostCSV)
+        hostCSV.close()
 
 
 pprint(dataInOutput)
