@@ -91,6 +91,7 @@ listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, he
         "selectItems": "count",
         "selectParentTemplates": ["host"],
         "selectTriggers": "count",
+        "selectInterfaces": "extend",
         "selectMacros": "extend",
         "selectGroups":"extend"},
     "auth": token, "id": 1}), verify=False).text))[0].value
@@ -134,7 +135,6 @@ for host in listOfHosts:
 
     # prepare host group list on one column
     hostGroupBundle=''
-    print(host["groups"])
     if len(host["groups"])>0:
         for idx,elem in enumerate(host["groups"]):
             hostGroupBundle+=elem["name"]
