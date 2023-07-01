@@ -1,35 +1,22 @@
 #!/bin/env python3.9
-
-# cat /var/lib/zabbix/config.py
-# url = "http://127.0.0.1/api_jsonrpc.php"
-# username = "Admin"
-# password = "zabbix"
-
 import sys
 sys.path.insert(0,'/var/lib/zabbix')
 import config
-
-# make directories
 import os
-
-# work with Zabbix API JSON RPC
-# pip3.9 install requests
 import requests
 import json
+from jsonpath_ng import jsonpath, parse
+import csv
+from pprint import pprint
+import urllib3
+urllib3.disable_warnings()
 
-
-# to support arguments
 import optparse
-
 parser=optparse.OptionParser()
-
-# import options
 parser.add_option('-g','--group',help='give a host group')
 parser.add_option('-l','--limit',help='limit the call',type=int)
+(opts,args) = parser.parse_args()
 
-(opts,args) = parser.parse_args() # instantiate parser
-
-# if limit was defined then override
 if opts.limit:
     if not opts.group:
         limit=opts.limit
@@ -38,302 +25,306 @@ if opts.limit:
 else:
     limit=99999
 
-
-# supress warnings in case of self signed certificate:
-# /usr/local/lib/python3.9/site-packages/urllib3/connectionpool.py:1095: InsecureRequestWarning: Unverified HTTPS request is being made to host 'zabbix.aigarskadikis.com'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
-import urllib3
-urllib3.disable_warnings()
-
-# shortify vairables
 url = config.url_src_instance
 user = config.username_src_instance
 password = config.password_src_instance
-csv_export_dir = config.csv_export_dir
 
+csv_export_dir = config.csv_export_dir
 
 try:
     os.makedirs(csv_export_dir)
 except:
     makeDirFailes = 1
 
-# have support for JSON path
-# pip3.9 install jsonpath-ng
-import json
-from jsonpath_ng import jsonpath, parse
-
-# support for CSV export and import
-import csv
-
-# format output better
-from pprint import pprint
-
-# prepare a file to write host list
-hostListCSV = open(csv_export_dir+'/hosts.csv', 'w', newline='')
-csvHostList_writer = csv.writer(hostListCSV)
-
-# prepare a file to write macro list
-macroListCSV = open(csv_export_dir+'/macros.csv', 'w', newline='')
-csvMacroList_writer = csv.writer(macroListCSV)
+hostListInCare = []
+listOfHosts = []
+dataInOutput = []
+listOfHostGroups = []
+readyToQueryHostObjects = 1
 
 # pick up token which will be used latter in script
 payload = json.dumps({"jsonrpc":"2.0","method":"user.login","params":{"user":user,"password":password},"id":1})
 headers = {'Content-Type': 'application/json'}
-
 response = requests.request("POST", url, headers=headers, data=payload, verify=False)
-
 token = parse('$.result').find(json.loads(response.text))[0].value
 
-# get list of hosts
-listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
-    "method": "host.get",
-    "params": {
-        "output":["host","hostid","status","maintenance_status","groups"],
-        "selectItems": "count",
-        "selectParentTemplates": ["host"],
-        "selectTriggers": "count",
-        "selectInterfaces": "extend",
-        "selectMacros": "extend",
-        "selectGroups":"extend"},
-    "auth": token, "id": 1}), verify=False).text))[0].value
-
-# get list of interfaces
-listOfInterfaces = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
-    "method": "hostinterface.get",
-    "params": {
-        "output": ["hostid","ip","dns","type","details","port","main"]},
-"auth": token,"id": 1}), verify=False).text))[0].value
-
-# list of host macros
-listOfHostMacros = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
-    "method": "usermacro.get",
-    "params": {
-        "output":"extend"},
-    "auth": token,"id": 1}), verify=False).text))[0].value
-
-# get list of host groups
-listOfHostGroups = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+if not opts.group:
+    # get list of all host groups and host objects inside
+    listOfHostGroups = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
     "method": "hostgroup.get",
     "params": { "output": ["groupid","name","hosts"], "selectHosts":"query" },
     "auth": token,"id": 1}), verify=False).text))[0].value
-
-# rename elements in JSON tree to not conflict while mapping with other result
-for host in listOfHosts:
-    host["hostName"] = host.pop("host")
-    host["hostStatus"] = host.pop("status")
-    host["amountOfItems"] = host.pop("items")
-    host["amountOfTriggers"] = host.pop("triggers")
-
-    # prepare template list in one column
-    templateBundle=''
-    if len(host["parentTemplates"])>0:
-        for idx,elem in enumerate(host["parentTemplates"]):
-            templateBundle+=elem["host"]
-            # if not last element
-            if idx!=len(host["parentTemplates"])-1:
-                templateBundle+=';'
-    host["templateBundle"] = templateBundle
-
-    # prepare host group list on one column
-    hostGroupBundle=''
-    if len(host["groups"])>0:
-        for idx,elem in enumerate(host["groups"]):
-            hostGroupBundle+=elem["name"]
-            # if not last element
-            if idx!=len(host["groups"])-1:
-                hostGroupBundle+=';'
-    host["allGroups"] = hostGroupBundle
-
-    # remove parentTemplates after parsing
-    host.pop("parentTemplates")
-    # count macros in output
-    host["amountOfMacros"] = len(host.pop("macros"))
-
-# map host name to host macro table
-hostMacroWithHostName = []
-
-# go through reported macros and create annother list which has only the columns which are required for import
-for macro in listOfHostMacros:
-    for host in listOfHosts:
-        if host["hostid"]==macro["hostid"]:
-            row = {}
-            row["hostName"] = host["hostName"]
-            row["macro"] = macro["macro"]
-            row["type"] = macro["type"]
-            row["description"] = macro["description"]
-            try:
-                row["value"] = macro["value"]
-            except:
-                row["value"] = ""
-            hostMacroWithHostName.append(row)
-            break
-
-# rename elements in JSON tree to not conflict while mapping with other result
-for interface in listOfInterfaces:
-
-    # aggregate all interface addresses in one place
-
-    # treat main interface in priority
-    if interface["main"] == '1':
-
-        interface["interface_dns"] = interface.pop("dns")
-        interface["interface_ip"] = interface.pop("ip")
-        interface["interface_details"] = interface.pop("details")
-        interface["interface_type"] = interface.pop("type")
-        interface["interface_port"] = interface.pop("port")
-      
-        # per SNMPv2/SNMPv3 the amount of columns differ, let's have them all in output
-        if len(interface["interface_details"])>0:
-            try:
-                interface["community"] = interface["interface_details"]['community']
-            except:
-                interface["community"] = ""
-            
-            try:
-                interface["authpassphrase"] = interface["interface_details"]['authpassphrase']
-            except:
-                interface["authpassphrase"] = ""
-
-            try:
-                interface["authprotocol"] = interface["interface_details"]['authprotocol']
-            except:
-                interface["authprotocol"] = ""
-
-            try:
-                interface["bulk"] = interface["interface_details"]['bulk']
-            except:
-                interface["bulk"] = ""
-
-            try:
-                interface["contextname"] = interface["interface_details"]['contextname']
-            except:
-                interface["contextname"] = ""
-
-            try:
-                interface["privpassphrase"] = interface["interface_details"]['privpassphrase']
-            except:
-                interface["privpassphrase"] = ""
-
-            try:
-                interface["privprotocol"] = interface["interface_details"]['privprotocol']
-            except:
-                interface["privprotocol"] = ""
-
-            try:
-                interface["securitylevel"] = interface["interface_details"]['securitylevel']
-            except:
-                interface["securitylevel"] = ""
-
-            try:
-                interface["securityname"] = interface["interface_details"]['securityname']
-            except:
-                interface["securityname"] = ""
-
-            try:
-                interface["version"] = interface["interface_details"]['version']
-            except:
-                interface["version"] = ""
-
-            #destroy original entity
-            interface.pop("interface_details")
-        else:
-            interface["community"] = ""
-            interface["authpassphrase"] = ""
-            interface["authprotocol"] = ""
-            interface["bulk"] = ""
-            interface["contextname"] = ""
-            interface["privpassphrase"] = ""
-            interface["privprotocol"] = ""
-            interface["securitylevel"] = ""
-            interface["securityname"] = ""
-            interface["version"] = ""
-
-            # destroy original entity
-            interface.pop("interface_details")
-
-# manually go through host list and add the columns which reflect interface details
-for host in listOfHosts:
-    interfaceExists = 0
-    host.pop("groups")
-    # iterate through interface
-    for interface in listOfInterfaces:
-
-        if host["hostid"]==interface["hostid"]:
-            # transfer interface fiels to general host table
-            host["community"] = interface["community"]
-            host["authpassphrase"] = interface["authpassphrase"]
-            host["authprotocol"] = interface["authprotocol"]
-            host["bulk"] = interface["bulk"]
-            host["contextname"] = interface["contextname"]
-            host["privpassphrase"] = interface["privpassphrase"]
-            host["privprotocol"] = interface["privprotocol"]
-            host["securitylevel"] = interface["securitylevel"]
-            host["securityname"] = interface["securityname"]
-            host["version"] = interface["version"]
-            host["interface_dns"] = interface["interface_dns"]
-            host["interface_ip"] = interface["interface_ip"]
-            host["interface_type"] = interface["interface_type"]
-            host["interface_port"] = interface["interface_port"]
-            interfaceExists = 1
-            break
-
-    if not interfaceExists:
-        host["community"] = ""
-        host["authpassphrase"] = ""
-        host["authprotocol"] = ""
-        host["bulk"] = ""
-        host["contextname"] = ""
-        host["privpassphrase"] = ""
-        host["privprotocol"] = ""
-        host["securitylevel"] = ""
-        host["securityname"] = ""
-        host["version"] = ""
-        host["interface_dns"] = ""
-        host["interface_ip"] = ""
-        host["interface_type"] = ""
-        host["interface_port"] = ""
-
-# host list are prepared here
-
-# if no argument of host group was specified
-finalList = []
-if not opts.group:
-    finalList = listOfHosts
-
 else:
-    selectedHostGroupExists=0
-    for selectedHostGroup in listOfHostGroups:
-        if selectedHostGroup["name"] == opts.group:
-            selectedHostGroupExists=1
-            if len(selectedHostGroup["hosts"])>0:
-                for selectedHost in selectedHostGroup["hosts"]:
-                    for host in listOfHosts:
-                        if host["hostid"] == selectedHost["hostid"]:
-                            finalList.append(host)
-            else:
-                print("host group is empty")
-            break
+    listOfHostGroups = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+        "method":"hostgroup.get",
+        "params":{"output":["groupid","name","hosts"],"filter":{"name":[opts.group]},"selectHosts":"query"},
+        "auth": token,"id": 1}), verify=False).text))[0].value
+    if len(listOfHostGroups) == 0:
+        print("specified host group '"+opts.group+"' does not exists")
+        readyToQueryHostObjects=0
+    else:
+        if len(listOfHostGroups[0]["hosts"]) == 0:
+            print("specified host group '"+opts.group+"' exists, but do not contain any host objects. nothing to do")
+            readyToQueryHostObjects = 0
+        else:
+            for host in listOfHostGroups[0]["hosts"]:
+                hostListInCare.append(host["hostid"])
 
-    if not selectedHostGroupExists:
-        print("'"+opts.group+"' host group does not exist")
+if readyToQueryHostObjects:
 
-# write host list to a file
-count = 0
-for data in finalList:
-    if count == 0:
-        header = data.keys()
-        csvHostList_writer.writerow(header)
-        count += 1
-    csvHostList_writer.writerow(data.values())
 
-# write macro list to a file
-count = 0
-for data in hostMacroWithHostName:
-        if count == 0:
-            header = data.keys()
-            csvMacroList_writer.writerow(header)
-            count += 1
-        csvMacroList_writer.writerow(data.values())
+    if len(hostListInCare) == 0:
+        # get list of hosts
+        listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+            "method": "host.get",
+            "params": {
+                "output":["host","hostid","status","maintenance_status","groups"],
+                "selectItems": "count",
+                "selectParentTemplates": ["host"],
+                "selectTriggers": "count",
+                "selectInterfaces": "extend",
+                "selectMacros": "extend",
+                "selectGroups":"extend"},
+            "auth": token, "id": 1}), verify=False).text))[0].value
+    else:
+        listOfHosts = parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
+            "method": "host.get",
+            "params": {
+                "hostids": hostListInCare,
+                "output":["host","hostid","status","maintenance_status","groups"],
+                "selectItems": "count",
+                "selectParentTemplates": ["host"],
+                "selectTriggers": "count",
+                "selectInterfaces": "extend",
+                "selectMacros": "extend",
+                "selectGroups":"extend"},
+            "auth": token, "id": 1}), verify=False).text))[0].value
 
-# close file for writing
-hostListCSV.close()
-macroListCSV.close()
+if len(listOfHosts) > 0:
+
+    for data in listOfHosts:
+        # calculate few extra fields
+        data["amountOfMacros"] = len(data["macros"])
+        data["amountOfItems"] = data["items"]
+        data["amountOfTriggers"] = data["triggers"]
+        data["amountOfInterfaces"] = len(data["interfaces"])
+
+    for host in listOfHosts:
+        
+        # prepare template list as one value in cell
+        templateBundle=''
+        if len(host["parentTemplates"])>0:
+            for idx,elem in enumerate(host["parentTemplates"]):
+                templateBundle+=elem["host"]
+                # if not last element
+                if idx!=len(host["parentTemplates"])-1:
+                    templateBundle+=';'
+
+        # prepare host group list as one value in cell
+        hostGroupBundle=''
+        if len(host["groups"])>0:
+            for idx,elem in enumerate(host["groups"]):
+                hostGroupBundle+=elem["name"]
+                # if not last element
+                if idx!=len(host["groups"])-1:
+                    hostGroupBundle+=';'
+
+
+        # if interface array is not empty
+        if len(host["interfaces"]) > 0:
+            for interface in host["interfaces"]:
+                row = {}
+                row["hostid"] = host["hostid"]
+                row["host"] = host["host"]
+                row["templateBundle"] = templateBundle
+                row["allGroups"] = hostGroupBundle
+
+                row["amountOfMacros"] = host["amountOfMacros"]
+                row["amountOfItems"] = host["amountOfItems"]
+                row["amountOfTriggers"] = host["amountOfTriggers"]
+                row["amountOfInterfaces"] = host["amountOfInterfaces"]
+
+                try:
+                    row["interfaceid"] = interface["interfaceid"]
+                except:
+                    row["interfaceid"] = ""
+
+                try:
+                    row["main"] = interface["main"]
+                except:
+                    row["main"] = ""
+
+                try:
+                    row["type"] = interface["type"]
+                except:
+                    row["type"] = ""
+
+                try:
+                    row["useip"] = interface["useip"]
+                except:
+                    row["useip"] = ""
+
+                try:
+                    row["ip"] = interface["ip"]
+                except:
+                    row["ip"] = ""
+
+                try:
+                    row["dns"] = interface["dns"]
+                except:
+                    row["dns"] = ""
+
+                try:
+                    row["port"] = interface["port"]
+                except:
+                    row["port"] = ""
+
+                try:
+                    row["community"] = interface["interface_details"]['community']
+                except:
+                    row["community"] = ""
+                
+                try:
+                    row["authpassphrase"] = interface["interface_details"]['authpassphrase']
+                except:
+                    row["authpassphrase"] = ""
+
+                try:
+                    row["authprotocol"] = interface["interface_details"]['authprotocol']
+                except:
+                    row["authprotocol"] = ""
+
+                try:
+                    row["bulk"] = interface["interface_details"]['bulk']
+                except:
+                    row["bulk"] = ""
+
+                try:
+                    row["contextname"] = interface["interface_details"]['contextname']
+                except:
+                    row["contextname"] = ""
+
+                try:
+                    row["privpassphrase"] = interface["interface_details"]['privpassphrase']
+                except:
+                    row["privpassphrase"] = ""
+
+                try:
+                    row["privprotocol"] = interface["interface_details"]['privprotocol']
+                except:
+                    row["privprotocol"] = ""
+
+                try:
+                    row["securitylevel"] = interface["interface_details"]['securitylevel']
+                except:
+                    row["securitylevel"] = ""
+
+                try:
+                    row["securityname"] = interface["interface_details"]['securityname']
+                except:
+                    row["securityname"] = ""
+
+                try:
+                    row["version"] = interface["interface_details"]['version']
+                except:
+                    row["version"] = ""
+
+                dataInOutput.append(row)
+
+        else:
+            row = {}
+            row["hostid"] = host["hostid"]
+            row["host"] = host["host"]
+            row["templateBundle"] = templateBundle
+            row["allGroups"] = hostGroupBundle
+
+            row["amountOfMacros"] = host["amountOfMacros"]
+            row["amountOfItems"] = host["amountOfItems"]
+            row["amountOfTriggers"] = host["amountOfTriggers"]
+            row["amountOfInterfaces"] = host["amountOfInterfaces"]
+
+            row["interfaceid"] = ""
+            row["main"] = ""
+            row["type"] = ""
+            row["useip"] = ""
+            row["ip"] = ""
+            row["dns"] = ""
+            row["port"] = ""
+
+            row["community"] = ""
+            row["authpassphrase"] = ""
+            row["authprotocol"] = ""
+            row["bulk"] = ""
+            row["contextname"] = ""
+            row["privpassphrase"] = ""
+            row["privprotocol"] = ""
+            row["securitylevel"] = ""
+            row["securityname"] = ""
+            row["version"] = ""
+            row["interface_dns"] = ""
+            row["interface_ip"] = ""
+            row["interface_type"] = ""
+            row["interface_port"] = ""
+
+            dataInOutput.append(row)
+
+
+if len(listOfHostGroups) > 0:
+    print("creating hosts.csv, macros.csv into:")
+    for group in listOfHostGroups:
+        # create a short list of all hostid in this host group
+        hostIDsInGroup = []
+        for id in group["hosts"]:
+            hostIDsInGroup.append(id["hostid"])
+
+        # make sure a subdirectory of host group name exists
+        try:
+            os.makedirs(os.path.join(csv_export_dir, group["name"]))
+        except:
+            cannotMakeHostGroupDir = 1
+
+        print(os.path.join(csv_export_dir, group["name"]))
+
+
+
+        # order on writing hosts.csv, macros.csv is important. first must be macros as it will drop "macros" column when done
+        macrosCSV = open(os.path.join(csv_export_dir, group["name"], 'macros.csv'), 'w', newline='')
+        csvMacrosList_writer = csv.writer(macrosCSV)
+        
+        macrosHeaderYes = 0
+        for data in listOfHosts:
+            if data["hostid"] in hostIDsInGroup:
+                # if there are macros defined on this host
+                if len(data["macros"]) > 0:
+                    for macro in data["macros"]:
+                        macro["hostName"] = data["host"]
+                        if macrosHeaderYes == 0:
+                            header = macro.keys()
+                            csvMacrosList_writer.writerow(header)
+                            macrosHeaderYes += 1
+                        csvMacrosList_writer.writerow(macro.values())
+                    
+
+        macrosCSV.close()
+
+
+        hostCSV = open(os.path.join(csv_export_dir, group["name"], 'hosts.csv'), 'w', newline='')
+        csvHostList_writer = csv.writer(hostCSV)
+
+        # order on writing hosts.csv, macros.csv is important. first must be macros as it will drop "macros" column when done
+        count = 0
+        for data in dataInOutput:
+            if count == 0:
+                header = data.keys()
+                csvHostList_writer.writerow(header)
+                count += 1
+            if data["hostid"] in hostIDsInGroup:
+                csvHostList_writer.writerow(data.values())
+
+        hostCSV.close()
+
+
+#pprint(dataInOutput)
+
+
+

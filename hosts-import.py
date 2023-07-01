@@ -36,6 +36,11 @@ try:
 except:
     makeDirFailes = 1
 
+import optparse
+parser=optparse.OptionParser()
+parser.add_option('-d','--directory',help='give a directory for hosts.csv, macros.csv')
+(opts,args) = parser.parse_args()
+
 # have support for JSON path
 # pip3.9 install jsonpath-ng
 import json
@@ -47,15 +52,19 @@ import csv
 # format output better
 from pprint import pprint
 
+if not opts.directory:
+    print("give a directory where the import files are located. for example:")
+    print("./hosts-import.py -d '/root/csv/Linux servers'")
+    exit(1)
+
 # assing CSV for reading
-listOfHostsCSV = open(csv_export_dir+'/hosts.csv','rt')
+listOfHostsCSV = open(os.path.join(opts.directory,'hosts.csv'),'rt', encoding='utf-8')
 # convert to python native list
 listOfHosts = list(csv.DictReader(listOfHostsCSV))
 
-listOfHostMacrosCSV = open(csv_export_dir+'/macros.csv','rt')
+listOfHostMacrosCSV = open(os.path.join(opts.directory,'macros.csv'),'rt', encoding='utf-8')
 # convert to python native list
 listOfHostMacros = list(csv.DictReader(listOfHostMacrosCSV))
-
 
 # pick up token which will be used latter in script
 payload = json.dumps({"jsonrpc":"2.0","method":"user.login","params":{"user":user,"password":password},"id":1})
@@ -94,15 +103,15 @@ for newHost in listOfHosts:
     hostExists=0
     # cehck if this host name already exists in destination. copmare 1 hostname with all hostnames in destination
     for existingHost in listOfExistingHosts:
-        if existingHost["host"]==newHost["hostName"]:
+        if existingHost["host"]==newHost["host"]:
             hostExists=1
             break
 
     if hostExists:
-        print(bcolors.OKGREEN + "'" + newHost["hostName"] + "', "+ bcolors.ENDC,end='', flush=True)
+        print(bcolors.OKGREEN + "'" + newHost["host"] + "', "+ bcolors.ENDC,end='', flush=True)
     else:
         # need to register new host
-        #print(bcolors.WARNING + "host '"+newHost["hostName"] + "' is not yet registred. will register it now"+bcolors.ENDC)
+        #print(bcolors.WARNING + "host '"+newHost["host"] + "' is not yet registred. will register it now"+bcolors.ENDC)
 
         # define new list of macros which is about to be installed on this host
         newHostMacros = []
@@ -110,7 +119,7 @@ for newHost in listOfHosts:
         # there can be mulitple lines in the list which match hostname
         for macro in listOfHostMacros:
             #print(macro["macro"])
-            if macro["hostName"] == newHost["hostName"]:
+            if macro["hostName"] == newHost["host"]:
                 #print("found one matching line in macros.csv")
                 # a host can have multiple macros
                 row = {}
@@ -156,7 +165,7 @@ for newHost in listOfHosts:
 
                     # check in file system if such template object exists
                     try:
-                        with open(locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+'.xml', 'r') as file:
+                        with open(locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+'.xml', 'r', encoding='utf-8') as file:
                             templateXMLtoImport = file.read().replace('\n', '')
 
                             uploadTemplatePayload=json.dumps({"jsonrpc":"2.0",
@@ -213,7 +222,7 @@ for newHost in listOfHosts:
 
 
                     except:
-                        print(bcolors.FAIL +"import template '"+ oneOfTemplatesToAdd  + "' failed, therefore cannot register host '"+newHost["hostName"]+". try manually importing '"+ locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+".xml', and rerun script. "+ bcolors.ENDC,end='', flush=True)
+                        print(bcolors.FAIL +"import template '"+ oneOfTemplatesToAdd  + "' failed, therefore cannot register host '"+newHost["host"]+". try manually importing '"+ locationOfTemplateBundles+'/'+oneOfTemplatesToAdd+".xml', and rerun script. "+ bcolors.ENDC,end='', flush=True)
                         allTemplatesExist=0
 
         if allTemplatesExist == 1:
@@ -223,7 +232,7 @@ for newHost in listOfHosts:
                     parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
                         "method":"host.create",
                         "params":{
-                            "host":newHost["hostName"],
+                            "host":newHost["host"],
                             "interfaces":[{
                                 "type":1,
                                 "main":1,
@@ -236,7 +245,7 @@ for newHost in listOfHosts:
                             "templates":templateIDsToAdd
                             },
                     "auth": token,"id":1}),verify=False).text))[0].value
-                    print("new ZBX host '"+newHost["hostName"]+"', ",end='', flush=True)
+                    print("new ZBX host '"+newHost["host"]+"', ",end='', flush=True)
                 except:
                     print("unable to create ZBX host")
 
@@ -252,7 +261,7 @@ for newHost in listOfHosts:
                         parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
                             "method":"host.create",
                             "params":{
-                                "host":newHost["hostName"],"interfaces":[{
+                                "host":newHost["host"],"interfaces":[{
                                     "type":2,
                                     "main":1,
                                     "useip":1,
@@ -267,7 +276,7 @@ for newHost in listOfHosts:
                                 "macros":newHostMacros,
                                 "templates":templateIDsToAdd},
                         "auth": token,"id": 1}), verify=False).text))[0].value
-                        print("new SNMPv2 host '"+newHost["hostName"]+"', ",end='', flush=True)
+                        print("new SNMPv2 host '"+newHost["host"]+"', ",end='', flush=True)
                     except:
                         print("unable to create SNMPv2 host")
 
@@ -278,7 +287,7 @@ for newHost in listOfHosts:
                         parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc": "2.0",
                             "method":"host.create",
                             "params":{
-                                "host":newHost["hostName"],"interfaces":[{
+                                "host":newHost["host"],"interfaces":[{
                                     "type":2,
                                     "main":1,
                                     "useip":1,
@@ -300,7 +309,7 @@ for newHost in listOfHosts:
                                     "templates":templateIDsToAdd
                                     },
                         "auth":token,"id":1}),verify=False).text))[0].value
-                        print("new SNMPv3 host '"+newHost["hostName"]+"', ",end='', flush=True)
+                        print("new SNMPv3 host '"+newHost["host"]+"', ",end='', flush=True)
                     except:
                         print("unable to create SNMPv3 host")
                 else:
@@ -313,7 +322,7 @@ for newHost in listOfHosts:
                     parse('$.result').find(json.loads(requests.request("POST", url, headers=headers, data=json.dumps({"jsonrpc":"2.0",
                         "method":"host.create",
                         "params":{
-                            "host":newHost["hostName"],
+                            "host":newHost["host"],
                             "interfaces":[{
                                 "type":4,
                                 "main":1,
@@ -326,13 +335,13 @@ for newHost in listOfHosts:
                             "templates":templateIDsToAdd
                             },
                     "auth": token,"id":1}),verify=False).text))[0].value
-                    print("new JMX host '"+newHost["hostName"]+"', ",end='', flush=True)
+                    print("new JMX host '"+newHost["host"]+"', ",end='', flush=True)
                 except:
                     print("unable to create JMX host")
             else:
                 print("this is not ZBX, not SNMP, not JMX host")
         else:
-            #print("not all templates are ready. skipping regitration per '",newHost["hostName"],"', enable 'print(uploadTemplatePayload)' and simulate JSON via Postman")
+            #print("not all templates are ready. skipping regitration per '",newHost["host"],"', enable 'print(uploadTemplatePayload)' and simulate JSON via Postman")
             #print()
             a=1
 print()
