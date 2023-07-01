@@ -220,9 +220,31 @@ if len(listOfHostGroups) > 0:
             os.makedirs(os.path.join(csv_export_dir, group["name"]))
         except:
             cannotMakeHostGroupDir = 1
+
+        # order on writing hosts.csv, macros.csv is important. first must be macros as it will drop "macros" column when done
+        macrosCSV = open(os.path.join(csv_export_dir, group["name"], 'macros.csv'), 'w', newline='')
+        csvMacrosList_writer = csv.writer(macrosCSV)
+        
+        macrosHeaderYes = 0
+        for data in dataInOutput:
+            if data["hostid"] in hostIDsInGroup:
+                # if there are macros defined on this host
+                if len(data["macros"]) > 0:
+                    for macro in data["macros"]:
+                        if macrosHeaderYes == 0:
+                            header = macro.keys()
+                            csvMacrosList_writer.writerow(header)
+                            macrosHeaderYes += 1
+                        csvMacrosList_writer.writerow(macro.values())
+                    
+
+        macrosCSV.close()
+
+
         hostCSV = open(os.path.join(csv_export_dir, group["name"], 'hosts.csv'), 'w', newline='')
         csvHostList_writer = csv.writer(hostCSV)
 
+        # order on writing hosts.csv, macros.csv is important. first must be macros as it will drop "macros" column when done
         count = 0
         for data in dataInOutput:
             if count == 0:
@@ -231,8 +253,6 @@ if len(listOfHostGroups) > 0:
                 count += 1
             if data["hostid"] in hostIDsInGroup:
                 csvHostList_writer.writerow(data.values())
-
-
 
         hostCSV.close()
 
