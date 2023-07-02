@@ -89,9 +89,14 @@ Make sure 'zabbix_templates_export_dir' has been specified in config.py. Then ru
 ./templates-export.py
 ```
 
+To export a specific template group:
+```
+./templates-export.py -g 'Templates/Databases'
+```
+
 ## Create an XML template archive for each master template
 
-Script will work with the templates which is already linked for hosts
+Script will find templates which are already linked to hosts. It will not re-export same tamplate twice
 ```
 ./nested-templates-export.py
 ```
@@ -105,8 +110,13 @@ Outcome is browsable:
 
 Before entering this step, the "nested-templates-export.py" must be completed without any errors.
 
-To import all hosts and macros from a specific catogory use:
+To import all hosts from the last 'hosts-export.py' session:
 ```
-./hosts-import -d '/tmp/ztemplate/Linux servers'
+./hosts-import -d '/tmp/csv'
+```
+
+To import hosts and macros from a specific host group use:
+```
+./hosts-import -d '/tmp/csv/Linux servers'
 ```
 

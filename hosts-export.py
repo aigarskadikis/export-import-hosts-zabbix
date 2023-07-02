@@ -25,6 +25,7 @@ if opts.limit:
 else:
     limit=99999
 
+print()
 url = config.url_src_instance
 user = config.username_src_instance
 password = config.password_src_instance
@@ -296,7 +297,7 @@ if len(listOfHostGroups) > 0:
             except:
                 cannotMakeHostGroupDir = 1
 
-            print(os.path.join(csv_export_dir, group["name"]))
+            print("'"+os.path.join(csv_export_dir, group["name"])+"', ",end='', flush=True)
 
 
 
@@ -336,8 +337,40 @@ if len(listOfHostGroups) > 0:
 
             hostCSV.close()
 
+# rewrite all host macros in one CSV
+macrosCSV = open(os.path.join(csv_export_dir,'macros.csv'), 'w', newline='')
+csvMacrosList_writer = csv.writer(macrosCSV)
+macrosHeaderYes = 0
+for data in listOfHosts:
+    # if there are macros defined on this host
+    if len(data["macros"]) > 0:
+        for macro in data["macros"]:
+            macro["hostName"] = data["host"]
+            if macrosHeaderYes == 0:
+                header = macro.keys()
+                csvMacrosList_writer.writerow(header)
+                macrosHeaderYes += 1
+            csvMacrosList_writer.writerow(macro.values())
+macrosCSV.close()
 
-#pprint(dataInOutput)
+# rewrite all hosts in one CSV
+hostCSV = open(os.path.join(csv_export_dir, 'hosts.csv'), 'w', newline='')
+csvHostList_writer = csv.writer(hostCSV)
 
+count = 0
+for data in dataInOutput:
+    if count == 0:
+        header = data.keys()
+        csvHostList_writer.writerow(header)
+        count += 1
+    csvHostList_writer.writerow(data.values())
+hostCSV.close()
 
-
+print()
+print()
+print("it's time to run:")
+print("./nested-templates-export.py")
+print()
+print("after that, to import all hosts on destination use: ")
+print("./hosts-import.py -d '"+csv_export_dir+"'")
+print()
