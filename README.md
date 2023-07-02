@@ -69,6 +69,7 @@ password_dest_instance = 'zabbix'
 Export all hosts and create subdirectories per every host group
 ```
 ./hosts-export.py
+find '/tmp/csv' -type f -name '*csv'
 ```
 
 To export hosts from a specific group
