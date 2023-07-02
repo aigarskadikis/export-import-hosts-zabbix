@@ -103,14 +103,14 @@ Script will find templates which are already linked to hosts. It will not re-exp
 
 Outcome is browsable:
 ```
-/tmp/ztemplates/nested
+find /tmp/ztemplates/nested -type f -name '*xml'
 ```
 
 ## Import hosts
 
 Before entering this step, the "nested-templates-export.py" must be completed without any errors.
 
-To import all hosts from the last 'hosts-export.py' session:
+To import all hosts and macros from the last 'hosts-export.py' session:
 ```
 ./hosts-import -d '/tmp/csv'
 ```
