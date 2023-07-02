@@ -74,11 +74,7 @@ Export all hosts and create subdirectories per every host group
 To export hosts from a specific group
 ```
 ./hosts-export.py -g 'Linux servers'
-```
-
-See output
-```
-find /tmp/csv -type f -name '*csv'
+find '/tmp/csv/Linux servers' -type f -name '*csv'
 ```
 
 ## Export all templates individually
@@ -87,36 +83,35 @@ Make sure 'zabbix_templates_export_dir' has been specified in config.py. Then ru
 
 ```
 ./templates-export.py
+find /tmp/ztemplates -type f -name '*xml'
 ```
 
-To export a specific template group:
+To export templates from a specific template group:
 ```
 ./templates-export.py -g 'Templates/Databases'
+find /tmp/ztemplates/Templates/Databases -type f -name '*xml'
 ```
 
-## Create an XML template archive for each master template
+## Create an XML template archive (a nested template tree) for each master template
 
 Script will find templates which are already linked to hosts. It will not re-export same tamplate twice
 ```
 ./nested-templates-export.py
-```
-
-Outcome is browsable:
-```
 find /tmp/ztemplates/nested -type f -name '*xml'
 ```
 
-## Import hosts
+## Import all hosts and macros from the last 'hosts-export.py' session
 
 Before entering this step, the "nested-templates-export.py" must be completed without any errors.
 
-To import all hosts and macros from the last 'hosts-export.py' session:
 ```
 ./hosts-import -d '/tmp/csv'
+find '/tmp/csv' -type f -name '*csv'
 ```
 
 To import hosts and macros from a specific host group use:
 ```
 ./hosts-import -d '/tmp/csv/Linux servers'
+find '/tmp/csv/Linux servers' -type f -name '*csv'
 ```
 
