@@ -185,56 +185,57 @@ if len(listOfHosts) > 0:
                     row["port"] = ""
 
                 # 10 fields from table 'interface_snmp'
+                if len(interface["details"])>0:
 
-                try:
-                    row["community"] = interface["interface_details"]['community']
-                except:
-                    row["community"] = ""
-                
-                try:
-                    row["authpassphrase"] = interface["interface_details"]['authpassphrase']
-                except:
-                    row["authpassphrase"] = ""
+                    try:
+                        row["community"] = interface["details"]['community']
+                    except:
+                        row["community"] = ""
+                    
+                    try:
+                        row["authpassphrase"] = interface["details"]['authpassphrase']
+                    except:
+                        row["authpassphrase"] = ""
 
-                try:
-                    row["authprotocol"] = interface["interface_details"]['authprotocol']
-                except:
-                    row["authprotocol"] = ""
+                    try:
+                        row["authprotocol"] = interface["details"]['authprotocol']
+                    except:
+                        row["authprotocol"] = ""
 
-                try:
-                    row["bulk"] = interface["interface_details"]['bulk']
-                except:
-                    row["bulk"] = ""
+                    try:
+                        row["bulk"] = interface["details"]['bulk']
+                    except:
+                        row["bulk"] = ""
 
-                try:
-                    row["contextname"] = interface["interface_details"]['contextname']
-                except:
-                    row["contextname"] = ""
+                    try:
+                        row["contextname"] = interface["details"]['contextname']
+                    except:
+                        row["contextname"] = ""
 
-                try:
-                    row["privpassphrase"] = interface["interface_details"]['privpassphrase']
-                except:
-                    row["privpassphrase"] = ""
+                    try:
+                        row["privpassphrase"] = interface["details"]['privpassphrase']
+                    except:
+                        row["privpassphrase"] = ""
 
-                try:
-                    row["privprotocol"] = interface["interface_details"]['privprotocol']
-                except:
-                    row["privprotocol"] = ""
+                    try:
+                        row["privprotocol"] = interface["details"]['privprotocol']
+                    except:
+                        row["privprotocol"] = ""
 
-                try:
-                    row["securitylevel"] = interface["interface_details"]['securitylevel']
-                except:
-                    row["securitylevel"] = ""
+                    try:
+                        row["securitylevel"] = interface["details"]['securitylevel']
+                    except:
+                        row["securitylevel"] = ""
 
-                try:
-                    row["securityname"] = interface["interface_details"]['securityname']
-                except:
-                    row["securityname"] = ""
+                    try:
+                        row["securityname"] = interface["details"]['securityname']
+                    except:
+                        row["securityname"] = ""
 
-                try:
-                    row["version"] = interface["interface_details"]['version']
-                except:
-                    row["version"] = ""
+                    try:
+                        row["version"] = interface["details"]['version']
+                    except:
+                        row["version"] = ""
 
                 dataInOutput.append(row)
 
