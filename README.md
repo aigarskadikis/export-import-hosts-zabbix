@@ -83,13 +83,13 @@ Make sure 'zabbix_templates_export_dir' has been specified in config.py. Then ru
 
 ```
 ./templates-export.py
-find /tmp/ztemplates -type f -name '*xml'
+find '/tmp/ztemplates' -type f -name '*xml'
 ```
 
 To export templates from a specific template group:
 ```
 ./templates-export.py -g 'Templates/Databases'
-find /tmp/ztemplates/Templates/Databases -type f -name '*xml'
+find '/tmp/ztemplates/Templates/Databases' -type f -name '*xml'
 ```
 
 ## Create an XML template archive (a nested template tree) for each master template
@@ -97,7 +97,7 @@ find /tmp/ztemplates/Templates/Databases -type f -name '*xml'
 Script will find templates which are already linked to hosts. It will not re-export same tamplate twice
 ```
 ./nested-templates-export.py
-find /tmp/ztemplates/nested -type f -name '*xml'
+find '/tmp/ztemplates/nested' -type f -name '*xml'
 ```
 
 ## Import all hosts and macros from the last 'hosts-export.py' session
