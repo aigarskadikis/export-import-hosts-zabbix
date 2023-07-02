@@ -5,7 +5,7 @@ Export list of host objects, host level macros from Zabbix 5.0 and import into Z
 ## About
 
 * Works with Python 3.9
-* Export tested with 5.0.23
+* Export tested with 5.0.36
 * Import tested with 6.0.18
 * Credentials in separate file /var/lib/zabbix/config.py
 * Every host element will have all SNMPv3 fiels. They will be blank if not used
