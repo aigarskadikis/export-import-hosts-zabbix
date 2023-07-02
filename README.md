@@ -102,16 +102,16 @@ find /tmp/ztemplates/nested -type f -name '*xml'
 
 ## Import all hosts and macros from the last 'hosts-export.py' session
 
-Before entering this step, the "nested-templates-export.py" must be completed without any errors.
+Before entering this step, the "nested-templates-export.py" must be completed with no errors.
 
 ```
-./hosts-import -d '/tmp/csv'
+./hosts-import.py -d '/tmp/csv'
 find '/tmp/csv' -type f -name '*csv'
 ```
 
 To import hosts and macros from a specific host group use:
 ```
-./hosts-import -d '/tmp/csv/Linux servers'
+./hosts-import.py -d '/tmp/csv/Linux servers'
 find '/tmp/csv/Linux servers' -type f -name '*csv'
 ```
 
