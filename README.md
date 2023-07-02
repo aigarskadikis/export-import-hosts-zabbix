@@ -106,12 +106,10 @@ Before entering this step, the "nested-templates-export.py" must be completed wi
 
 ```
 ./hosts-import.py -d '/tmp/csv'
-find '/tmp/csv' -type f -name '*csv'
 ```
 
 To import hosts and macros from a specific host group use:
 ```
 ./hosts-import.py -d '/tmp/csv/Linux servers'
-find '/tmp/csv/Linux servers' -type f -name '*csv'
 ```
 
