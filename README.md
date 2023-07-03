@@ -26,7 +26,7 @@ dnf -y install git
 
 Install Python3.9
 ```
-dnf -y install python3.9 python3.9-pip
+dnf -y install python3.9
 ```
 
 Install modules required by program

@@ -54,7 +54,7 @@ from pprint import pprint
 
 if not opts.directory:
     print("give a directory where the import files are located. for example:")
-    print("./hosts-import.py -d '/root/csv/Linux servers'")
+    print("./hosts-import.py -d '/tmp/csv/Linux servers'")
     exit(1)
 
 # assing CSV for reading
